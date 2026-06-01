@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { v4 as uuid } from 'uuid';
 import Modal from './Modal';
-import { MISSION_TYPES, LIEUX_FREQUENTS, AVATAR_COLORS } from '../data/config';
+import { LIEUX_FREQUENTS, AVATAR_COLORS } from '../data/config';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
@@ -28,7 +28,7 @@ function fmtDate(ds) {
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}.`;
 }
 
-export default function AdminView({ salaries, setSalaries, missions, setMissions }) {
+export default function AdminView({ salaries, setSalaries, missions, setMissions, missionTypes }) {
   const [selected, setSelected] = useState(null);
   const [showAddSalarie, setShowAddSalarie] = useState(false);
   const [showAddMission, setShowAddMission] = useState(false);

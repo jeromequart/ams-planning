@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { MISSION_TYPES, AVATAR_COLORS } from '../data/config';
+import { AVATAR_COLORS } from '../data/config';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
@@ -22,7 +22,7 @@ function totalHeures(missions) {
   return missions.reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
 }
 
-export default function EmployeeView({ salaries, missions }) {
+export default function EmployeeView({ salaries, missions, missionTypes }) {
   const [sel, setSel] = useState(salaries[0]?.id || null);
 
   const salarie = salaries.find(s => s.id === sel) || salaries[0];
