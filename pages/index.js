@@ -77,7 +77,8 @@ export default function Home() {
           ) : mode === 'admin' ? (
             <AdminView
               salaries={salaries} setSalaries={setSalaries}
-              missions={[]} setMissions={() => {}}
+              evenements={evenements}
+              inscriptions={inscriptions} setInscriptions={setInscriptions}
               missionTypes={missionTypes}
             />
           ) : mode === 'missions' ? (
