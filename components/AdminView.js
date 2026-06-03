@@ -117,6 +117,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
               <div style={{display:'flex',gap:8}}>
                 <button style={s.btnSec} onClick={()=>openEdit(salarie)}>✏️ Modifier</button>
                 <button style={{...s.btnSec,color:'var(--red)'}} onClick={()=>handleDelete(salarie.id)}>🗑 Supprimer</button>
+                <button style={{...s.btnPri,background:'#185fa5'}} onClick={()=>{setCompteForm({email:'',password:''});setCompteMsg('');setShowCompte(true);}}>🔑 Créer un accès</button>
               </div>
             </div>
 
