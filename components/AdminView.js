@@ -34,7 +34,7 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
   const [showAddMission, setShowAddMission] = useState(false);
   const [editSalarie, setEditSalarie] = useState(null);
   const [formS, setFormS] = useState({ prenom: '', nom: '', role: '', colorIdx: 0 });
-  const [formM, setFormM] = useState({ date: '', debut: '08:00', fin: '17:00', type: 'dps', lieu: '', lieuCustom: '', note: '' });
+  const [formM, setFormM] = useState({ nom: '', ref: '', date: '', debut: '08:00', fin: '17:00', type: 'dps', lieu: '', lieuCustom: '', note: '' });
 
   const salarie = salaries.find(s => s.id === selected);
   const missionsSalarie = missions
@@ -72,7 +72,7 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
 
   // --- Mission ---
   function openAddMission() {
-    setFormM({ date: '', debut: '08:00', fin: '17:00', type: 'dps', lieu: '', lieuCustom: '', note: '' });
+    setFormM({ nom: '', ref: '', date: '', debut: '08:00', fin: '17:00', type: 'dps', lieu: '', lieuCustom: '', note: '' });
     setShowAddMission(true);
   }
   function saveMission() {
@@ -81,6 +81,8 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
     setMissions(prev => [...prev, {
       id: uuid(),
       salarieId: selected,
+      nom: formM.nom,
+      ref: formM.ref,
       date: formM.date,
       debut: formM.debut,
       fin: formM.fin,
@@ -196,16 +198,18 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
                 <table style={s.table}>
                   <thead>
                     <tr>
-                      {['Date', 'Horaires', 'Type', 'Lieu', 'Durée', 'Note', ''].map(h => (
+                      {['Événement', 'Réf.', 'Date', 'Horaires', 'Type', 'Lieu', 'Durée', 'Note', ''].map(h => (
                         <th key={h} style={s.th}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {missionsSalarie.map(m => {
-                      const mt = MISSION_TYPES[m.type] || MISSION_TYPES.autre;
+                      const mt = missionTypes[m.type] || missionTypes.autre || Object.values(missionTypes)[0];
                       return (
                         <tr key={m.id}>
+                          <td style={s.td}><strong>{m.nom || '—'}</strong></td>
+                          <td style={{ ...s.td, fontFamily: 'var(--font-mono)', fontSize: 11, color: 'var(--text-2)' }}>{m.ref || '—'}</td>
                           <td style={s.td}>{fmtDate(m.date)}</td>
                           <td style={{ ...s.td, fontFamily: 'var(--font-mono)', fontSize: 12, whiteSpace: 'nowrap' }}>{m.debut} – {m.fin}</td>
                           <td style={s.td}>
@@ -282,6 +286,16 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
       {/* Modal ajout mission */}
       {showAddMission && salarie && (
         <Modal title={`Nouvelle mission — ${salarie.prenom} ${salarie.nom}`} onClose={() => setShowAddMission(false)}>
+          <div style={s.formGrid}>
+            <div style={s.formGroup}>
+              <label style={s.label}>Nom de l&apos;événement</label>
+              <input style={s.input} value={formM.nom} onChange={e => setFormM(p => ({ ...p, nom: e.target.value }))} placeholder="Ex : Bal des mamans" autoFocus />
+            </div>
+            <div style={s.formGroup}>
+              <label style={s.label}>Référence</label>
+              <input style={s.input} value={formM.ref} onChange={e => setFormM(p => ({ ...p, ref: e.target.value }))} placeholder="Ex : DPS 218" />
+            </div>
+          </div>
           <div style={s.formGroup}>
             <label style={s.label}>Date *</label>
             <input style={s.input} type="date" value={formM.date} onChange={e => setFormM(p => ({ ...p, date: e.target.value }))} />
@@ -304,7 +318,7 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
           <div style={s.formGroup}>
             <label style={s.label}>Type de mission</label>
             <select style={s.input} value={formM.type} onChange={e => setFormM(p => ({ ...p, type: e.target.value }))}>
-              {Object.entries(MISSION_TYPES).map(([k, v]) => (
+              {Object.entries(missionTypes || {}).map(([k, v]) => (
                 <option key={k} value={k}>{v.icon} {v.label}</option>
               ))}
             </select>
