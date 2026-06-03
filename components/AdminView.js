@@ -23,6 +23,14 @@ function fmtH(h) {
 function totalHeures(missions) {
   return missions.reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
 }
+function heuresEffectuees(missions) {
+  const now = new Date().toISOString().slice(0, 10);
+  return missions.filter(m => m.date < now || m.validated).reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
+}
+function heuresAVenir(missions) {
+  const now = new Date().toISOString().slice(0, 10);
+  return missions.filter(m => m.date >= now && !m.validated).reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
+}
 function fmtDate(ds) {
   const d = new Date(ds);
   return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0, 3)}.`;
@@ -174,8 +182,8 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
             <div style={s.statsRow}>
               {[
                 { label: 'Missions planifiées', value: missionsSalarie.length },
-                { label: 'Heures totales', value: fmtH(totalHeures(missionsSalarie)) },
-                { label: 'Moy. par mission', value: missionsSalarie.length ? fmtH(Math.round(totalHeures(missionsSalarie) / missionsSalarie.length * 2) / 2) : '—' },
+                { label: 'Heures effectuées', value: fmtH(heuresEffectuees(missionsSalarie)) },
+                { label: 'Heures à venir', value: fmtH(heuresAVenir(missionsSalarie)) },
               ].map(({ label, value }) => (
                 <div key={label} style={s.statCard}>
                   <div style={s.statLabel}>{label}</div>
@@ -221,11 +229,18 @@ export default function AdminView({ salaries, setSalaries, missions, setMissions
                           <td style={{ ...s.td, fontFamily: 'var(--font-mono)', fontSize: 12 }}>{fmtH(dureeH(m.debut, m.fin))}</td>
                           <td style={{ ...s.td, color: 'var(--text-2)', fontStyle: 'italic', maxWidth: 180 }}>{m.note}</td>
                           <td style={s.td}>
-                            <button
-                              onClick={() => deleteMission(m.id)}
-                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 14 }}
-                              title="Supprimer"
-                            >🗑</button>
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              <button
+                                onClick={() => setMissions(prev => prev.map(x => x.id === m.id ? { ...x, validated: !x.validated } : x))}
+                                style={{ background: m.validated ? '#eaf3de' : '#f8f6f2', border: '1px solid var(--border)', borderRadius: 6, cursor: 'pointer', fontSize: 12, padding: '3px 8px', color: m.validated ? '#3b6d11' : 'var(--text-3)', fontFamily: 'var(--font)' }}
+                                title={m.validated ? 'Annuler validation' : 'Valider les heures'}
+                              >{m.validated ? '✅ Validé' : '○ Valider'}</button>
+                              <button
+                                onClick={() => deleteMission(m.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 14 }}
+                                title="Supprimer"
+                              >🗑</button>
+                            </div>
                           </td>
                         </tr>
                       );

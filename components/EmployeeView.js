@@ -32,7 +32,8 @@ export default function EmployeeView({ salaries, missions, missionTypes }) {
 
   const now = new Date().toISOString().slice(0, 10);
   const prochaine = mesMissions.find(m => m.date >= now);
-  const total = totalHeures(mesMissions);
+  const hEffectuees = mesMissions.filter(m => m.date < now || m.validated).reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
+  const hAVenir = mesMissions.filter(m => m.date >= now && !m.validated).reduce((s, m) => s + dureeH(m.debut, m.fin), 0);
   const passees = mesMissions.filter(m => m.date < now).length;
   const aVenir = mesMissions.filter(m => m.date >= now).length;
 
@@ -86,9 +87,9 @@ export default function EmployeeView({ salaries, missions, missionTypes }) {
 
           <div style={s.statsRow}>
             {[
-              { label: 'Heures totales', value: fmtH(total), sub: 'sur la saison' },
+              { label: 'Heures effectuées', value: fmtH(hEffectuees), sub: 'réalisées' },
+              { label: 'Heures à venir', value: fmtH(hAVenir), sub: 'planifiées' },
               { label: 'Missions à venir', value: aVenir, sub: 'planifiées' },
-              { label: 'Missions passées', value: passees, sub: 'réalisées' },
             ].map(({ label, value, sub }) => (
               <div key={label} style={s.statCard}>
                 <div style={s.statLabel}>{label}</div>
