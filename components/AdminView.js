@@ -18,6 +18,10 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
   const [editId, setEditId] = useState(null);
   const [form, setForm] = useState(FORM_VIDE);
   const [saving, setSaving] = useState(false);
+  const [showCompte, setShowCompte] = useState(false);
+  const [compteForm, setCompteForm] = useState({ email:'', password:'' });
+  const [compteMsg, setCompteMsg] = useState('');
+  const [compteSaving, setCompteSaving] = useState(false);
   const now = new Date().toISOString().slice(0,10);
 
   const salarie = salaries.find(s => s.id === selected);
@@ -46,6 +50,23 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
   }
 
   async function retirer(inscId){ await removeInscription(inscId); }
+
+  async function handleCreerCompte() {
+    if (!compteForm.email || !compteForm.password) { setCompteMsg('Email et mot de passe obligatoires.'); return; }
+    if (compteForm.password.length < 6) { setCompteMsg('Mot de passe minimum 6 caractères.'); return; }
+    setCompteSaving(true); setCompteMsg('');
+    try {
+      const res = await fetch('/api/create-salarie', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: compteForm.email, password: compteForm.password, salarieId: selected }),
+      });
+      const json = await res.json();
+      if (json.error) { setCompteMsg('Erreur : ' + json.error); }
+      else { setCompteMsg('✅ Compte créé ! Identifiants à transmettre au salarié.'); }
+    } catch(e) { setCompteMsg('Erreur de connexion.'); }
+    finally { setCompteSaving(false); }
+  }
 
   const s=styles;
   return (
@@ -159,6 +180,34 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           </>
         )}
       </div>
+
+      {showCompte && salarie && (
+        <Modal title={`Accès salarié — ${salarie.prenom} ${salarie.nom}`} onClose={() => setShowCompte(false)}>
+          <div style={{ marginBottom:16, padding:'12px 14px', background:'#e6f1fb', borderRadius:10, fontSize:13, color:'#185fa5' }}>
+            Créez les identifiants de connexion pour ce salarié. Transmettez-les lui ensuite.
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <label style={s.label}>Adresse email *</label>
+            <input style={s.input} type="email" value={compteForm.email} onChange={e=>setCompteForm(p=>({...p,email:e.target.value}))} placeholder="prenom.nom@email.com" autoFocus />
+          </div>
+          <div style={{ marginBottom:12 }}>
+            <label style={s.label}>Mot de passe *</label>
+            <input style={s.input} type="text" value={compteForm.password} onChange={e=>setCompteForm(p=>({...p,password:e.target.value}))} placeholder="Minimum 6 caractères" />
+            <div style={{ fontSize:11, color:'var(--text-3)', marginTop:4 }}>Le salarié pourra le modifier depuis son profil ultérieurement.</div>
+          </div>
+          {compteMsg && (
+            <div style={{ padding:'10px 14px', borderRadius:8, marginBottom:12, fontSize:13, background: compteMsg.startsWith('✅') ? '#eaf3de' : '#fcebeb', color: compteMsg.startsWith('✅') ? '#3b6d11' : '#a32d2d' }}>
+              {compteMsg}
+            </div>
+          )}
+          <div style={{ display:'flex', gap:10, justifyContent:'flex-end', marginTop:16 }}>
+            <button style={s.btnSec} onClick={() => setShowCompte(false)}>Fermer</button>
+            <button style={{ ...s.btnPri, background:'#185fa5' }} onClick={handleCreerCompte} disabled={compteSaving}>
+              {compteSaving ? 'Création…' : 'Créer le compte'}
+            </button>
+          </div>
+        </Modal>
+      )}
 
       {showModal&&(
         <Modal title={editId?'Modifier le salarié':'Nouveau salarié'} onClose={()=>setShowModal(false)}>
