@@ -106,7 +106,7 @@ export default function EmployeeView({ salaries, missions, missionTypes }) {
               <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-3)', fontSize: 13 }}>Aucune mission planifiée.</div>
             ) : (
               mesMissions.map(m => {
-                const mt = MISSION_TYPES[m.type] || MISSION_TYPES.autre;
+                const mt = missionTypes[m.type] || missionTypes.autre || Object.values(missionTypes)[0];
                 const d = new Date(m.date);
                 const estPassee = m.date < now;
                 return (
@@ -117,6 +117,12 @@ export default function EmployeeView({ salaries, missions, missionTypes }) {
                       <div style={s.monthName}>{MONTHS[d.getMonth()].slice(0, 4)}.</div>
                     </div>
                     <div style={{ flex: 1 }}>
+                      {(m.nom || m.ref) && (
+                        <div style={{ marginBottom: 5 }}>
+                          {m.nom && <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{m.nom}</span>}
+                          {m.ref && <span style={{ fontSize: 11, color: 'var(--text-3)', marginLeft: 8, fontFamily: 'var(--font-mono)' }}>{m.ref}</span>}
+                        </div>
+                      )}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
                         <span style={{ background: mt.bg, color: mt.color, fontSize: 11, padding: '3px 9px', borderRadius: 20, fontWeight: 500 }}>
                           {mt.icon} {mt.label}
