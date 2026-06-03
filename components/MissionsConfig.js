@@ -35,7 +35,7 @@ const COULEURS_DISPO = [
 
 const FORM_VIDE = { id: '', label: '', icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
 
-export default function MissionsConfig({ missionTypes, setMissionTypes }) {
+export default function MissionsConfig({ missionTypes, saveMissionType, removeMissionType }) {
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState(FORM_VIDE);
   const [editId, setEditId] = useState(null);
@@ -61,25 +61,18 @@ export default function MissionsConfig({ missionTypes, setMissionTypes }) {
     setShowModal(true);
   }
 
-  function sauvegarder() {
+  async function sauvegarder() {
     if (!form.label.trim()) { setErreur('Le nom est obligatoire.'); return; }
     const id = editId || genId(form.label);
     if (!editId && missionTypes[id]) { setErreur('Ce nom existe déjà.'); return; }
 
-    setMissionTypes(prev => ({
-      ...prev,
-      [id]: { label: form.label.trim(), icon: form.icon, bg: form.bg, color: form.color }
-    }));
+    await saveMissionType(id, { label: form.label.trim(), icon: form.icon, bg: form.bg, color: form.color });
     setShowModal(false);
   }
 
-  function supprimer(id) {
+  async function supprimer(id) {
     if (!confirm(`Supprimer le type "${missionTypes[id].label}" ?`)) return;
-    setMissionTypes(prev => {
-      const next = { ...prev };
-      delete next[id];
-      return next;
-    });
+    await removeMissionType(id);
   }
 
   const couleurSelectionnee = COULEURS_DISPO.find(c => c.bg === form.bg) || COULEURS_DISPO[7];

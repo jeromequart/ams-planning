@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { v4 as uuid } from 'uuid';
 import EventModal from './EventModal';
 import { AVATAR_COLORS } from '../data/config';
 
@@ -52,7 +51,7 @@ function exportICS(ev, salaries, inscriptions) {
   a.download = `${ev.nom || 'evenement'}.ics`; a.click();
 }
 
-export default function PlanningView({ salaries, evenements, setEvenements, inscriptions, setInscriptions, missionTypes }) {
+export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes }) {
   const [weekStart, setWeekStart] = useState(getMonday(new Date()));
   const [selected, setSelected] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -74,30 +73,30 @@ export default function PlanningView({ salaries, evenements, setEvenements, insc
     return `${weekStart.getDate()} ${MONTHS[weekStart.getMonth()].slice(0,3)}. – ${end.getDate()} ${MONTHS[end.getMonth()].slice(0,3)}. ${weekStart.getFullYear()}`;
   };
 
-  function handleCreateEvent(ev) {
-    setEvenements(prev => editEv ? prev.map(e => e.id === ev.id ? ev : e) : [...prev, ev]);
+  async function handleCreateEvent(ev) {
+    if (editEv) { await updateEvenement(ev.id, ev); }
+    else { await addEvenement(ev); }
     setEditEv(null);
   }
-  function deleteEvent(id) {
+  async function deleteEvent(id) {
     if (!confirm('Supprimer cet événement et toutes ses inscriptions ?')) return;
-    setEvenements(prev => prev.filter(e => e.id !== id));
-    setInscriptions(prev => prev.filter(i => i.evenementId !== id));
+    await removeEvenement(id);
     setSelected(null);
   }
 
-  function inscrireSalarie(evId, salarieId) {
+  async function inscrireSalarie(evId, salarieId) {
     const exists = inscriptions.find(i => i.evenementId === evId && i.salarieId === salarieId);
     if (exists) return;
-    setInscriptions(prev => [...prev, { id: uuid(), evenementId: evId, salarieId, statut: 'valide', source: 'admin' }]);
+    await addInscription({ evenementId: evId, salarieId, statut: 'valide', source: 'admin' });
   }
-  function retirerSalarie(inscId) {
-    setInscriptions(prev => prev.filter(i => i.id !== inscId));
+  async function retirerSalarie(inscId) {
+    await removeInscription(inscId);
   }
-  function validerInscription(inscId) {
-    setInscriptions(prev => prev.map(i => i.id === inscId ? { ...i, statut: 'valide' } : i));
+  async function validerInscription(inscId) {
+    await updateInscription(inscId, 'valide');
   }
-  function refuserInscription(inscId) {
-    setInscriptions(prev => prev.map(i => i.id === inscId ? { ...i, statut: 'refuse' } : i));
+  async function refuserInscription(inscId) {
+    await updateInscription(inscId, 'refuse');
   }
 
   function clickCell(dayStr, hourY) {

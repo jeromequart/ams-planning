@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { v4 as uuid } from 'uuid';
 import { AVATAR_COLORS } from '../data/config';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -37,7 +36,7 @@ function fmtMonth(monthKey) {
 const SEUIL_SEMAINE = 48; // max légal semaine
 const SEUIL_MOIS = 151.67; // temps plein mensuel
 
-export default function EmployeeView({ salaries, evenements, inscriptions, setInscriptions, missionTypes }) {
+export default function EmployeeView({ salaries, evenements, inscriptions, addInscription, removeInscription, missionTypes }) {
   const [sel, setSel] = useState(salaries[0]?.id || null);
   const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois' | 'planning'
   const salarie = salaries.find(s => s.id === sel) || salaries[0];
@@ -80,11 +79,11 @@ export default function EmployeeView({ salaries, evenements, inscriptions, setIn
     !inscriptions.find(i => i.salarieId === salarie.id && i.evenementId === e.id)
   );
 
-  function sInscrire(evId) {
-    setInscriptions(prev => [...prev, { id: uuid(), evenementId: evId, salarieId: salarie.id, statut: 'en_attente', source: 'salarie' }]);
+  async function sInscrire(evId) {
+    await addInscription({ evenementId: evId, salarieId: salarie.id, statut: 'en_attente', source: 'salarie' });
   }
-  function seDesinscrire(inscId) {
-    setInscriptions(prev => prev.filter(i => i.id !== inscId));
+  async function seDesinscrire(inscId) {
+    await removeInscription(inscId);
   }
 
   const c = AVATAR_COLORS[salarie.colorIdx % AVATAR_COLORS.length];
