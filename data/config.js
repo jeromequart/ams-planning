@@ -1,4 +1,3 @@
-// Types de missions disponibles
 export const MISSION_TYPES = {
   dps: { label: 'Poste de secours', color: '#a32d2d', bg: '#fcebeb', icon: '🚑' },
   admin: { label: 'Administratif', color: '#185fa5', bg: '#e6f1fb', icon: '📋' },
@@ -8,18 +7,11 @@ export const MISSION_TYPES = {
   autre: { label: 'Autre', color: '#5f5e5a', bg: '#f1efe8', icon: '📌' },
 };
 
-// Lieux fréquents (modifiables)
 export const LIEUX_FREQUENTS = [
-  'Vélodrome',
-  'Palais Omnisports',
-  'Plage du Prado',
-  'Siège AMS',
-  'Entrepôt',
-  'Festival Marseille',
-  'Stade Delort',
+  'Vélodrome', 'Palais Omnisports', 'Plage du Prado',
+  'Siège AMS', 'Entrepôt', 'Festival Marseille', 'Stade Delort',
 ];
 
-// Couleurs disponibles pour les avatars salariés
 export const AVATAR_COLORS = [
   { bg: '#fcebeb', txt: '#a32d2d' },
   { bg: '#e6f1fb', txt: '#185fa5' },
@@ -30,8 +22,9 @@ export const AVATAR_COLORS = [
   { bg: '#fbeaf0', txt: '#993556' },
 ];
 
-// Données initiales de démonstration (vides — à remplir)
+// Données initiales vides
 export const INITIAL_DATA = {
   salaries: [],
-  missions: [],
+  evenements: [],      // remplace missions
+  inscriptions: [],    // { id, evenementId, salarieId, statut: 'en_attente'|'valide'|'refuse', source: 'admin'|'salarie' }
 };
