@@ -232,13 +232,17 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>{weekLabel()}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <div style={{ display:'flex', background:'#f8f6f2', borderRadius:8, padding:3, gap:3 }}>
+            {[{key:'semaine',label:'Semaine'},{key:'mois',label:'Mois'}].map(({key,label})=>(
+              <button key={key} onClick={()=>setViewMode(key)} style={{ padding:'5px 12px', borderRadius:6, border:'none', fontSize:12, fontWeight:viewMode===key?500:400, background:viewMode===key?'#fff':'transparent', color:viewMode===key?'var(--text)':'var(--text-2)', cursor:'pointer', boxShadow:viewMode===key?'0 1px 3px rgba(0,0,0,0.08)':'none', fontFamily:'var(--font)' }}>{label}</button>
+            ))}
+          </div>
           {enAttente.length > 0 && (
             <button style={{ ...st.todayBtn, background: '#faeeda', color: '#854f0b', border: '1px solid #f0d5a0' }}
               onClick={() => setShowInscriptions(true)}>
               ⏳ {enAttente.length} inscription{enAttente.length > 1 ? 's' : ''} en attente
             </button>
           )}
-          </div>
           <button style={st.createBtn} onClick={() => { setCreateDate(''); setEditEv(null); setShowCreate(true); }}>
             + Nouvel événement
           </button>
@@ -401,8 +405,6 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
             </div>
           </div>
         )}
-      </div>
-
       </div>
       {/* Récap semaine */}
       {viewMode === 'semaine' && evWeek.length > 0 && (
