@@ -52,10 +52,9 @@ function exportICS(ev, salaries, inscriptions) {
 }
 
 
-function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectEvent, selectedId }) {
-  const [current, setCurrent] = useState(() => {
-    const d = new Date(); d.setDate(1); return d;
-  });
+function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectEvent, selectedId, currentMonth, setCurrentMonth }) {
+  const current = currentMonth;
+  const setCurrent = setCurrentMonth;
 
   const year = current.getFullYear();
   const month = current.getMonth();
@@ -161,6 +160,7 @@ const mst = {
 
 export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes }) {
   const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois'
+  const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [weekStart, setWeekStart] = useState(getMonday(new Date()));
   const [selected, setSelected] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -256,6 +256,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           missionTypes={missionTypes}
           onSelectEvent={(id) => setSelected(selected === id ? null : id)}
           selectedId={selected}
+          currentMonth={currentMonth} setCurrentMonth={setCurrentMonth}
         />
       )}
 
@@ -419,6 +420,44 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
         )}
       </div>
       )} {/* fin vue semaine */}
+
+      {/* Récap mois */}
+      {viewMode === 'mois' && (() => {
+        const evMois = evenements.filter(e => {
+          const d = new Date(e.date);
+          return d.getFullYear() === currentMonth.getFullYear() && d.getMonth() === currentMonth.getMonth();
+        });
+        if (evMois.length === 0) return null;
+        return (
+          <div style={{ marginTop: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+              Récap mois — {evMois.length} événement{evMois.length > 1 ? 's' : ''}
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {[...evMois].sort((a, b) => a.date.localeCompare(b.date) || a.debut.localeCompare(b.debut)).map(ev => {
+                const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label: ev.type, icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
+                const evInscrits = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'valide');
+                return (
+                  <div key={ev.id} onClick={() => setSelected(ev.id === selected ? null : ev.id)}
+                    style={{ display: 'flex', alignItems: 'center', gap: 12, background: '#fff', borderRadius: 10, border: `1px solid ${selected === ev.id ? mt.color : 'var(--border)'}`, padding: '10px 14px', cursor: 'pointer' }}>
+                    <div style={{ width: 3, height: 32, borderRadius: 4, background: mt.color, flexShrink: 0 }} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500 }}>
+                        {ev.nom || mt.label} {ev.ref && <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{ev.ref}</span>}
+                      </div>
+                      <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
+                        {new Date(ev.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
+                        {ev.ouvert && <span style={{ marginLeft: 6, color: '#3b6d11' }}>🔓</span>}
+                      </div>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); exportICS(ev, salaries, inscriptions); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Exporter .ics">📅</button>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
       {/* Récap semaine */}
       {viewMode === 'semaine' && evWeek.length > 0 && (
         <div style={{ marginTop: 20 }}>
