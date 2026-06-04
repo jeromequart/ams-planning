@@ -5,6 +5,7 @@ import EmployeeView from './EmployeeView';
 import MissionsConfig from './MissionsConfig';
 import AdminView from './AdminView';
 import ValidationMensuelle from './ValidationMensuelle';
+import ListeSalaries from './ListeSalaries';
 import { MISSION_TYPES } from '../data/config';
 import * as db from '../lib/db';
 
@@ -60,6 +61,7 @@ export default function AdminApp({ onLogout }) {
     return data;
   }
 
+  const [showListe, setShowListe] = useState(false);
   const nbAttente = inscriptions.filter(i=>i.statut==='en_attente').length;
 
   const tabs = [
@@ -99,6 +101,9 @@ export default function AdminApp({ onLogout }) {
               <div style={{ fontWeight:500, color:'var(--text-2)' }}>Administration</div>
               <div>{salaries.length} salarié{salaries.length>1?'s':''} · {evenements.length} événement{evenements.length>1?'s':''}</div>
             </div>
+            <button onClick={() => setShowListe(true)} style={{ background:'#f8f6f2', border:'1px solid var(--border)', borderRadius:8, padding:'6px 12px', fontSize:12, cursor:'pointer', fontFamily:'var(--font)', color:'var(--text-2)' }}>
+              👥 Liste salariés
+            </button>
             <button onClick={onLogout} style={{ background:'#f8f6f2', border:'1px solid var(--border)', borderRadius:8, padding:'6px 12px', fontSize:12, cursor:'pointer', fontFamily:'var(--font)', color:'var(--text-2)' }}>
               Déconnexion
             </button>
@@ -128,6 +133,7 @@ export default function AdminApp({ onLogout }) {
           </div>
         )}
       </main>
+      {showListe && <ListeSalaries salaries={salaries} onClose={() => setShowListe(false)} />}
     </div>
   );
 }
