@@ -4,6 +4,7 @@ import PlanningView from './PlanningView';
 import EmployeeView from './EmployeeView';
 import MissionsConfig from './MissionsConfig';
 import AdminView from './AdminView';
+import ValidationMensuelle from './ValidationMensuelle';
 import { MISSION_TYPES } from '../data/config';
 import * as db from '../lib/db';
 
@@ -63,6 +64,7 @@ export default function AdminApp({ onLogout }) {
 
   const tabs = [
     { key:'planning', label:'📅 Planning' },
+    { key:'validation', label:'✓ Validation mensuelle' },
     { key:'admin', label:'🛡 Salariés' },
     { key:'missions', label:'⚙️ Missions' },
   ];
@@ -86,6 +88,9 @@ export default function AdminApp({ onLogout }) {
                 {key==='planning'&&nbAttente>0&&(
                   <span style={{ position:'absolute', top:2, right:2, background:'#a32d2d', color:'#fff', borderRadius:'50%', width:16, height:16, fontSize:9, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>{nbAttente}</span>
                 )}
+                {key==='validation'&&nbAttente>0&&(
+                  <span style={{ position:'absolute', top:2, right:2, background:'#854f0b', color:'#fff', borderRadius:'50%', width:16, height:16, fontSize:9, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700 }}>{nbAttente}</span>
+                )}
               </button>
             ))}
           </nav>
@@ -108,6 +113,13 @@ export default function AdminApp({ onLogout }) {
           <div style={{ textAlign:'center', padding:'80px', color:'#a32d2d' }}><div>{error}</div><button onClick={loadAll} style={{ marginTop:16, padding:'8px 20px', background:'#a32d2d', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' }}>Réessayer</button></div>
         ) : mode==='planning' ? (
           <PlanningView salaries={salaries} evenements={evenements} addEvenement={addEvenement} updateEvenement={updateEvenement} removeEvenement={removeEvenement} inscriptions={inscriptions} addInscription={addInscription} updateInscription={updateInscription} removeInscription={removeInscription} missionTypes={missionTypes} />
+        ) : mode==='validation' ? (
+          <ValidationMensuelle
+            salaries={salaries} evenements={evenements}
+            inscriptions={inscriptions} addInscription={addInscription}
+            updateInscription={updateInscription} removeInscription={removeInscription}
+            missionTypes={missionTypes}
+          />
         ) : mode==='admin' ? (
           <AdminView salaries={salaries} addSalarie={addSalarie} updateSalarie={updateSalarie} removeSalarie={removeSalarie} evenements={evenements} inscriptions={inscriptions} updateInscription={updateInscription} removeInscription={removeInscription} missionTypes={missionTypes} creerCompte={creerCompteSalarie} />
         ) : (
