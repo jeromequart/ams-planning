@@ -51,7 +51,116 @@ function exportICS(ev, salaries, inscriptions) {
   a.download = `${ev.nom || 'evenement'}.ics`; a.click();
 }
 
+
+function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectEvent, selectedId }) {
+  const [current, setCurrent] = useState(() => {
+    const d = new Date(); d.setDate(1); return d;
+  });
+
+  const year = current.getFullYear();
+  const month = current.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  // Lundi = 0
+  const startOffset = (firstDay.getDay() + 6) % 7;
+  const totalCells = Math.ceil((startOffset + lastDay.getDate()) / 7) * 7;
+  const cells = Array.from({ length: totalCells }, (_, i) => {
+    const d = new Date(year, month, i - startOffset + 1);
+    return d;
+  });
+
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const evMonth = evenements.filter(e => {
+    const d = new Date(e.date);
+    return d.getFullYear() === year && d.getMonth() === month;
+  });
+
+  function fmtCell(d) { return d.toISOString().slice(0, 10); }
+
+  return (
+    <div>
+      {/* Nav mois */}
+      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+        <button style={mst.navBtn} onClick={() => setCurrent(new Date(year, month-1, 1))}>‹</button>
+        <button style={mst.navBtn} onClick={() => setCurrent(new Date(year, month+1, 1))}>›</button>
+        <button style={mst.todayBtn} onClick={() => { const d=new Date(); d.setDate(1); setCurrent(d); }}>Aujourd'hui</button>
+        <span style={{ fontSize:15, fontWeight:700, marginLeft:8 }}>{MONTHS[month]} {year}</span>
+        <span style={{ fontSize:12, color:'var(--text-2)', marginLeft:8 }}>{evMonth.length} événement{evMonth.length>1?'s':''}</span>
+      </div>
+
+      {/* Grille */}
+      <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden' }}>
+        {/* Jours semaine */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', borderBottom:'1px solid var(--border)' }}>
+          {['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'].map(d => (
+            <div key={d} style={{ padding:'10px 0', textAlign:'center', fontSize:11, fontWeight:600, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em' }}>{d}</div>
+          ))}
+        </div>
+
+        {/* Cellules */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
+          {cells.map((d, i) => {
+            const ds = fmtCell(d);
+            const isCurrentMonth = d.getMonth() === month;
+            const isToday = ds === todayStr;
+            const dayEvs = evMonth.filter(e => e.date === ds);
+            return (
+              <div key={i} style={{
+                minHeight:100, padding:'6px 4px',
+                borderRight: i%7<6 ? '1px solid var(--border)' : 'none',
+                borderBottom: i < totalCells-7 ? '1px solid var(--border)' : 'none',
+                background: isToday ? '#fffaf9' : !isCurrentMonth ? '#fafaf8' : '#fff',
+              }}>
+                {/* Numéro jour */}
+                <div style={{
+                  width:24, height:24, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:12, fontWeight:isToday?700:400,
+                  background:isToday?'#a32d2d':'transparent',
+                  color:isToday?'#fff':!isCurrentMonth?'#ccc':'var(--text)',
+                  marginBottom:4, marginLeft:2,
+                }}>{d.getDate()}</div>
+
+                {/* Événements */}
+                {dayEvs.slice(0,3).map(ev => {
+                  const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label:ev.type, icon:'📌', bg:'#f1efe8', color:'#5f5e5a' };
+                  const isSelected = selectedId === ev.id;
+                  const inscrits = inscriptions.filter(i=>i.evenementId===ev.id&&i.statut==='valide').length;
+                  return (
+                    <div key={ev.id} onClick={() => onSelectEvent(ev.id)}
+                      style={{
+                        background:mt.bg, borderLeft:`3px solid ${mt.color}`,
+                        borderRadius:4, padding:'2px 5px', marginBottom:2,
+                        cursor:'pointer', overflow:'hidden',
+                        boxShadow:isSelected?`0 0 0 2px ${mt.color}`:'none',
+                      }}>
+                      <div style={{ fontSize:10, fontWeight:600, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
+                        {ev.debut.slice(0,5)} {ev.nom || mt.label}
+                      </div>
+                      <div style={{ fontSize:9, color:mt.color, opacity:0.7 }}>
+                        {inscrits}/{ev.effectif} 👤{ev.ouvert?' 🔓':''}
+                      </div>
+                    </div>
+                  );
+                })}
+                {dayEvs.length > 3 && (
+                  <div style={{ fontSize:10, color:'var(--text-3)', padding:'1px 4px' }}>+{dayEvs.length-3} autres</div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const mst = {
+  navBtn: { background:'#fff', border:'1px solid var(--border-med)', borderRadius:8, width:32, height:32, cursor:'pointer', fontSize:18, color:'var(--text-2)', fontFamily:'var(--font)' },
+  todayBtn: { background:'#fff', border:'1px solid var(--border-med)', borderRadius:8, padding:'0 12px', height:32, cursor:'pointer', fontSize:12, fontFamily:'var(--font)' },
+};
+
 export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes }) {
+  const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois'
   const [weekStart, setWeekStart] = useState(getMonday(new Date()));
   const [selected, setSelected] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
@@ -129,6 +238,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
               ⏳ {enAttente.length} inscription{enAttente.length > 1 ? 's' : ''} en attente
             </button>
           )}
+          </div>
           <button style={st.createBtn} onClick={() => { setCreateDate(''); setEditEv(null); setShowCreate(true); }}>
             + Nouvel événement
           </button>
@@ -293,8 +403,9 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
         )}
       </div>
 
+      </div>
       {/* Récap semaine */}
-      {evWeek.length > 0 && (
+      {viewMode === 'semaine' && evWeek.length > 0 && (
         <div style={{ marginTop: 20 }}>
           <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Récap semaine — {evWeek.length} événement{evWeek.length > 1 ? 's' : ''}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
