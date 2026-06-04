@@ -3,6 +3,22 @@ import HistoriqueModal from './HistoriqueModal';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
+function getAge(dateNaissance) {
+  if (!dateNaissance) return null;
+  const today = new Date(); const birth = new Date(dateNaissance);
+  let age = today.getFullYear() - birth.getFullYear();
+  const m = today.getMonth() - birth.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+  return age;
+}
+function getDiplomeBadge(sal) {
+  const badges = [];
+  if (sal.chefEquipe) badges.push({ label:'Chef éq.', color:'#534AB7', bg:'#EEEDFE' });
+  if (sal.pse2) badges.push({ label:'PSE 2', color:'#185FA5', bg:'#E6F1FB' });
+  else if (sal.pse1) badges.push({ label:'PSE 1', color:'#185FA5', bg:'#E6F1FB' });
+  if (sal.bnssa) badges.push({ label:'BNSSA', color:'#0F6E56', bg:'#E1F5EE' });
+  return badges;
+}
 function dureeH(d,f){const[dh,dm]=d.split(':').map(Number);const[fh,fm]=f.split(':').map(Number);return(fh*60+fm-(dh*60+dm))/60;}
 function fmtH(h){if(h<=0)return'0h';const hh=Math.floor(h);const mm=Math.round((h-hh)*60);return mm?`${hh}h${String(mm).padStart(2,'0')}`:`${hh}h`;}
 function initiales(p,n){return((p?.[0]||'')+(n?.[0]||'')).toUpperCase();}
@@ -169,13 +185,21 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                   const h = heuresSalarie(sal.id);
                   const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
                   const warn=h>35; const danger=h>48;
+                  const age = getAge(sal.dateNaissance);
+                  const badges = getDiplomeBadge(sal);
                   return (
-                    <th key={sal.id} style={{ ...s.th, width:90, minWidth:90 }}>
-                      <div style={{ width:26, height:26, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:500, margin:'0 auto 3px' }}>
-                        {initiales(sal.prenom,sal.nom)}
+                    <th key={sal.id} style={{ ...s.th, width:100, minWidth:100 }}>
+                      <div style={{ position:'relative', width:26, height:26, margin:'0 auto 3px' }}>
+                        <div style={{ width:26, height:26, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:500 }}>
+                          {initiales(sal.prenom,sal.nom)}
+                        </div>
+                        {age !== null && age < 18 && <div style={{ position:'absolute', top:-3, right:-3, background:'#A32D2D', color:'#fff', fontSize:8, borderRadius:10, padding:'0 3px', lineHeight:'14px', border:'1px solid #fff' }}>-18</div>}
                       </div>
                       <div style={{ fontSize:10, color:'var(--text-2)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.prenom}</div>
                       <div style={{ fontSize:11, fontWeight:500, fontFamily:'var(--font-mono)', color:danger?'#A32D2D':warn?'#854F0B':'#3B6D11' }}>{fmtH(h)}</div>
+                      <div style={{ display:'flex', gap:2, flexWrap:'wrap', justifyContent:'center', marginTop:2 }}>
+                        {badges.map(b=><span key={b.label} style={{ fontSize:8, background:b.bg, color:b.color, padding:'1px 4px', borderRadius:8, fontWeight:500 }}>{b.label}</span>)}
+                      </div>
                     </th>
                   );
                 })}
