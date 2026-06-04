@@ -249,6 +249,18 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
         </div>
       </div>
 
+      {/* Vue mois */}
+      {viewMode === 'mois' && (
+        <MonthView
+          evenements={evenements} inscriptions={inscriptions} salaries={salaries}
+          missionTypes={missionTypes}
+          onSelectEvent={(id) => setSelected(selected === id ? null : id)}
+          selectedId={selected}
+        />
+      )}
+
+      {/* Vue semaine */}
+      {viewMode === 'semaine' && (
       <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 300px' : '1fr', gap: 16 }}>
         {/* Grille */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
@@ -406,6 +418,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           </div>
         )}
       </div>
+      )} {/* fin vue semaine */}
       {/* Récap semaine */}
       {viewMode === 'semaine' && evWeek.length > 0 && (
         <div style={{ marginTop: 20 }}>
