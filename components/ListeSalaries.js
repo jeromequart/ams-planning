@@ -38,7 +38,7 @@ export default function ListeSalaries({ salaries, onClose }) {
     setGenerating(true);
     try {
       const { jsPDF } = await import('jspdf');
-      const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
       const RED = [163, 45, 45];
       const GRAY = [95, 94, 90];
@@ -47,7 +47,7 @@ export default function ListeSalaries({ salaries, onClose }) {
 
       // Header
       doc.setFillColor(...RED);
-      doc.rect(0, 0, 210, 32, 'F');
+      doc.rect(0, 0, 297, 32, 'F');
       // Logo croix blanche simulé
       doc.setFillColor(255, 255, 255);
       doc.rect(14, 8, 10, 10, 'F');
@@ -65,7 +65,7 @@ export default function ListeSalaries({ salaries, onClose }) {
       doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
       doc.text('Liste des salariés saisonniers', 27, 22);
-      doc.text(`Édité le ${now}`, 196, 22, { align: 'right' });
+      doc.text(`Édité le ${now}`, 283, 22, { align: 'right' });
 
       // Sous-titre
       doc.setTextColor(...GRAY);
@@ -74,14 +74,14 @@ export default function ListeSalaries({ salaries, onClose }) {
 
       // En-têtes tableau
       const headers = ['Nom', 'Prénom', 'Téléphone', 'Email', 'Diplômes', 'Âge'];
-      const colWidths = [38, 32, 34, 52, 28, 18];
+      const colWidths = [50, 40, 42, 70, 48, 20];
       const colX = [14];
       for (let i = 0; i < colWidths.length - 1; i++) colX.push(colX[i] + colWidths[i]);
 
       let y = 46;
       // Fond header tableau
       doc.setFillColor(...LIGHT);
-      doc.rect(14, y, 182, 7, 'F');
+      doc.rect(14, y, 269, 7, 'F');
       doc.setTextColor(...GRAY);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
@@ -91,12 +91,12 @@ export default function ListeSalaries({ salaries, onClose }) {
       // Lignes
       doc.setFont('helvetica', 'normal');
       salaries.sort((a, b) => a.nom.localeCompare(b.nom)).forEach((sal, idx) => {
-        if (y > 265) {
+        if (y > 185) {
           doc.addPage();
           y = 20;
           // Re-header
           doc.setFillColor(...LIGHT);
-          doc.rect(14, y, 182, 7, 'F');
+          doc.rect(14, y, 269, 7, 'F');
           doc.setTextColor(...GRAY);
           doc.setFontSize(8);
           doc.setFont('helvetica', 'bold');
@@ -108,7 +108,7 @@ export default function ListeSalaries({ salaries, onClose }) {
         // Alternance lignes
         if (idx % 2 === 0) {
           doc.setFillColor(252, 252, 250);
-          doc.rect(14, y - 1, 182, 8, 'F');
+          doc.rect(14, y - 1, 269, 8, 'F');
         }
 
         const age = getAge(sal.dateNaissance);
@@ -125,15 +125,12 @@ export default function ListeSalaries({ salaries, onClose }) {
         doc.text(sal.prenom, colX[1] + 1, y + 5);
         doc.text(sal.tel || '—', colX[2] + 1, y + 5);
 
-        // Email tronqué si trop long
         const email = sal.email || '—';
-        doc.setFontSize(7.5);
-        doc.text(email.length > 28 ? email.slice(0, 26) + '…' : email, colX[3] + 1, y + 5);
+        doc.setFontSize(8);
+        doc.text(email.length > 34 ? email.slice(0, 32) + '…' : email, colX[3] + 1, y + 5);
         doc.setFontSize(8.5);
 
-        const dipStr = diplomes.join(', ') || '—';
-        const dipTrunc = dipStr.length > 16 ? dipStr.slice(0, 14) + '…' : dipStr;
-        doc.text(dipTrunc, colX[4] + 1, y + 5);
+        doc.text(diplomes.join(', ') || '—', colX[4] + 1, y + 5);
 
         // Âge
         doc.setFontSize(8.5);
@@ -155,7 +152,7 @@ export default function ListeSalaries({ salaries, onClose }) {
 
         // Ligne séparatrice légère
         doc.setDrawColor(220, 218, 212);
-        doc.line(14, y + 7, 196, y + 7);
+        doc.line(14, y + 7, 283, y + 7);
         y += 9;
       });
 
@@ -165,7 +162,7 @@ export default function ListeSalaries({ salaries, onClose }) {
         doc.setPage(i);
         doc.setFontSize(7);
         doc.setTextColor(...GRAY);
-        doc.text(`AMS Croix Blanche — Document confidentiel — Page ${i}/${pageCount}`, 105, 290, { align: 'center' });
+        doc.text(`AMS Croix Blanche — Document confidentiel — Page ${i}/${pageCount}`, 148, 205, { align: 'center' });
       }
 
       doc.save(`salaries-ams-${new Date().toISOString().slice(0,10)}.pdf`);
