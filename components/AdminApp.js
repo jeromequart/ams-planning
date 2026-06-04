@@ -8,6 +8,7 @@ import ValidationMensuelle from './ValidationMensuelle';
 import ListeSalaries from './ListeSalaries';
 import { MISSION_TYPES } from '../data/config';
 import * as db from '../lib/db';
+import { getVehicules, getEvenementVehicules, addEvenementVehicule, deleteAllEvenementVehicules } from '../lib/db';
 import { retireInscription as dbRetire, reactiverInscription as dbReactiver } from '../lib/db';
 
 export default function AdminApp({ onLogout }) {
@@ -24,6 +25,8 @@ export default function AdminApp({ onLogout }) {
       setLoading(true);
       const [s, e, i, mt] = await Promise.all([db.getSalaries(), db.getEvenements(), db.getInscriptions(), db.getMissionTypes()]);
       setSalaries(s); setEvenements(e); setInscriptions(i);
+      const vehs = await getVehicules();
+      setVehicules(vehs);
       setMissionTypes(Object.keys(mt).length > 0 ? mt : MISSION_TYPES);
       setError(null);
     } catch(err) { setError('Erreur de connexion.'); }
@@ -56,6 +59,46 @@ export default function AdminApp({ onLogout }) {
   }
 
   // Types missions
+  async function saveEvenementVehicules(evenementId, vehs) {
+    await deleteAllEvenementVehicules(evenementId);
+    const saved = [];
+    for (const v of vehs) {
+      const s = await addEvenementVehicule({ ...v, evenementId });
+      saved.push(s);
+    }
+    setEvenementVehicules(prev => ({ ...prev, [evenementId]: saved }));
+  }
+
+  async function loadEvenementVehicules(evenementId) {
+    if (evenementVehicules[evenementId]) return evenementVehicules[evenementId];
+    const vehs = await getEvenementVehicules(evenementId);
+    setEvenementVehicules(prev => ({ ...prev, [evenementId]: vehs }));
+    return vehs;
+  }
+
+  async function envoyerConvocations(evenementId) {
+    const ev = evenements.find(e => e.id === evenementId);
+    if (!ev) return;
+    const inscritsValides = inscriptions.filter(i => i.evenementId === evenementId && i.statut === 'valide');
+    const sals = salaries.filter(s => inscritsValides.find(i => i.salarieId === s.id));
+    const vehs = evenementVehicules[evenementId] || await loadEvenementVehicules(evenementId);
+    const vehsAvecLabel = vehs.map(v => {
+      const veh = vehicules.find(x => x.id === v.vehiculeId);
+      const conducteur = salaries.find(s => s.id === v.conducteurId);
+      return {
+        label: veh ? `${veh.nom} — ${veh.immatriculation}` : v.vehiculeCustom || '?',
+        conducteurNom: conducteur ? `${conducteur.prenom} ${conducteur.nom}` : null,
+      };
+    });
+    const res = await fetch('/api/send-convocation', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ evenement: ev, salaries: sals, vehicules: vehsAvecLabel }),
+    });
+    const data = await res.json();
+    return data.results;
+  }
+
   async function saveMissionType(id, mt) { await db.upsertMissionType(id,mt); setMissionTypes(p=>({...p,[id]:mt})); }
   async function removeMissionType(id) { await db.deleteMissionType(id); setMissionTypes(p=>{const n={...p};delete n[id];return n;}); }
 
@@ -71,6 +114,8 @@ export default function AdminApp({ onLogout }) {
   }
 
   const [showListe, setShowListe] = useState(false);
+  const [vehicules, setVehicules] = useState([]);
+  const [evenementVehicules, setEvenementVehicules] = useState({});
   const nbAttente = inscriptions.filter(i=>i.statut==='en_attente').length;
 
   const tabs = [
