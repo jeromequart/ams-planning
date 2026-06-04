@@ -136,7 +136,7 @@ function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectE
                         {ev.debut.slice(0,5)} {ev.nom || mt.label}
                       </div>
                       <div style={{ fontSize:9, color:mt.color, opacity:0.7 }}>
-                        {inscrits}/{ev.effectif} 👤{ev.ouvert?' 🔓':''}
+                        {inscrits}/{ev.effectif} 👤{!ev.ouvert?' 🔒':''}
                       </div>
                     </div>
                   );
@@ -320,7 +320,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                             {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} 👤
                           </div>
                         )}
-                        {ev.ouvert && <div style={{ position: 'absolute', top: 3, right: 4, fontSize: 9, color: mt.color, opacity: 0.7 }}>🔓</div>}
+                        {!ev.ouvert && <div style={{ position: 'absolute', top: 3, right: 4, fontSize: 9, color: mt.color, opacity: 0.7 }}>🔒</div>}
                       </div>
                     );
                   })}
