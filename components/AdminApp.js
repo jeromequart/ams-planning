@@ -8,6 +8,7 @@ import ValidationMensuelle from './ValidationMensuelle';
 import ListeSalaries from './ListeSalaries';
 import { MISSION_TYPES } from '../data/config';
 import * as db from '../lib/db';
+import { retireInscription as dbRetire, reactiverInscription as dbReactiver } from '../lib/db';
 
 export default function AdminApp({ onLogout }) {
   const [mode, setMode] = useState('planning');
@@ -45,6 +46,14 @@ export default function AdminApp({ onLogout }) {
   async function addInscription(i) { const n = await db.addInscription(i); setInscriptions(p=>[...p,n]); }
   async function updateInscription(id, statut) { await db.updateInscription(id,statut); setInscriptions(p=>p.map(x=>x.id===id?{...x,statut}:x)); }
   async function removeInscription(id) { await db.deleteInscription(id); setInscriptions(p=>p.filter(x=>x.id!==id)); }
+  async function retireInscriptionFn(id, by='admin') {
+    await dbRetire(id, by);
+    setInscriptions(p=>p.map(x=>x.id===id?{...x,statut:'retire',updatedBy:by,updatedAt:new Date().toISOString()}:x));
+  }
+  async function reactiverInscriptionFn(id, statut='valide', by='admin') {
+    await dbReactiver(id, statut, by);
+    setInscriptions(p=>p.map(x=>x.id===id?{...x,statut,updatedBy:by,updatedAt:new Date().toISOString()}:x));
+  }
 
   // Types missions
   async function saveMissionType(id, mt) { await db.upsertMissionType(id,mt); setMissionTypes(p=>({...p,[id]:mt})); }
@@ -123,6 +132,7 @@ export default function AdminApp({ onLogout }) {
             salaries={salaries} evenements={evenements}
             inscriptions={inscriptions} addInscription={addInscription}
             updateInscription={updateInscription} removeInscription={removeInscription}
+            retireInscription={retireInscriptionFn} reactiverInscription={reactiverInscriptionFn}
             missionTypes={missionTypes}
           />
         ) : mode==='admin' ? (
