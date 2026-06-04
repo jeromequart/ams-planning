@@ -158,12 +158,14 @@ const mst = {
   todayBtn: { background:'#fff', border:'1px solid var(--border-med)', borderRadius:8, padding:'0 12px', height:32, cursor:'pointer', fontSize:12, fontFamily:'var(--font)' },
 };
 
-export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes }) {
+export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes, vehicules=[], evenementVehicules={}, loadEvenementVehicules, saveEvenementVehicules, envoyerConvocations }) {
   const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois'
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [weekStart, setWeekStart] = useState(getMonday(new Date()));
   const [selected, setSelected] = useState(null);
   const [showCreate, setShowCreate] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [sendResult, setSendResult] = useState(null);
   const [createDate, setCreateDate] = useState('');
   const [editEv, setEditEv] = useState(null);
   const [showInscriptions, setShowInscriptions] = useState(false);
@@ -310,7 +312,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                     const height = Math.max(((toMin(ev.fin) - toMin(ev.debut)) / GRID_TOTAL) * (HOURS.length * CELL_H), 28);
                     const isSelected = selected === ev.id;
                     return (
-                      <div key={ev.id} onClick={e => { e.stopPropagation(); setSelected(isSelected ? null : ev.id); }}
+                      <div key={ev.id} onClick={e => { e.stopPropagation(); handleSelectEvent(ev.id); }}
                         style={{ position: 'absolute', left: 3, right: 3, top, height, background: mt.bg, borderLeft: `3px solid ${mt.color}`, borderRadius: 6, padding: '3px 6px', cursor: 'pointer', overflow: 'hidden', boxShadow: isSelected ? `0 0 0 2px ${mt.color}` : '0 1px 3px rgba(0,0,0,0.08)', zIndex: 1 }}>
                         <div style={{ fontSize: 10, fontWeight: 700, color: mt.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                           {ev.nom || mt.label}
@@ -543,6 +545,11 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           missionTypes={missionTypes}
           initialDate={createDate}
           editEvent={editEv}
+          vehicules={vehicules}
+          inscrits={selEv ? inscriptions.filter(i=>i.evenementId===selEv.id) : []}
+          salaries={salaries}
+          vehiculesAffectes={selEv && evenementVehicules[selEv.id] ? evenementVehicules[selEv.id] : []}
+          onSaveVehicules={selEv ? (vehs) => saveEvenementVehicules(selEv.id, vehs) : null}
         />
       )}
     </div>
