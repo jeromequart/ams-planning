@@ -421,6 +421,56 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
       </div>
       )} {/* fin vue semaine */}
 
+      {/* Panneau détail événement — visible en vue mois aussi */}
+      {viewMode === 'mois' && selEv && (
+        <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', padding: 16, marginTop: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+            <div>
+              <div style={{ fontSize: 15, fontWeight: 700 }}>{selEv.nom || '(sans nom)'}</div>
+              {selEv.ref && <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>{selEv.ref}</div>}
+            </div>
+            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-3)' }}>✕</button>
+          </div>
+          <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
+            <div>📅 {new Date(selEv.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            <div>🕐 {selEv.debut} – {selEv.fin}</div>
+            {selEv.lieu && <div>📍 {selEv.lieu}</div>}
+            {(() => { const mt = missionTypes[selEv.type] || {}; return <div><span style={{ background: mt.bg, color: mt.color, fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{mt.icon} {mt.label}</span></div>; })()}
+            {selEv.note && <div style={{ fontStyle: 'italic' }}>💬 {selEv.note}</div>}
+            <div>👥 Effectif : {inscritsValides.length} / {selEv.effectif} {selEv.ouvert ? <span style={{ background: '#eaf3de', color: '#3b6d11', fontSize: 10, padding: '1px 6px', borderRadius: 10, marginLeft: 4 }}>🔓 Ouvert</span> : <span style={{ background: '#f1efe8', color: '#888', fontSize: 10, padding: '1px 6px', borderRadius: 10, marginLeft: 4 }}>🔒 Fermé</span>}</div>
+          </div>
+          {/* Équipe */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Équipe</div>
+            {inscritsValides.length === 0
+              ? <div style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>Aucun salarié inscrit</div>
+              : inscritsValides.map(insc => {
+                  const sal = salaries.find(s => s.id === insc.salarieId);
+                  return sal ? (
+                    <div key={insc.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                      <span style={{ fontSize: 12, flex: 1 }}>{sal.prenom} {sal.nom}</span>
+                      <button onClick={() => retirerSalarie(insc.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>✕</button>
+                    </div>
+                  ) : null;
+                })
+            }
+            {inscritsValides.length < selEv.effectif && (
+              <select style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-med)', borderRadius: 8, fontSize: 12, fontFamily: 'var(--font)', background: '#fff', marginTop: 8 }}
+                value="" onChange={e => { if (e.target.value) inscrireSalarie(selEv.id, e.target.value); e.target.value = ''; }}>
+                <option value="">+ Inscrire un salarié…</option>
+                {salaries.filter(s => !inscritsValides.find(i => i.salarieId === s.id)).map(s => <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
+              </select>
+            )}
+          </div>
+          {/* Actions */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <button onClick={() => exportICS(selEv, salaries, inscriptions)} style={st.btnSec}>📅 Exporter .ics</button>
+            <button onClick={() => { setEditEv(selEv); setShowCreate(true); }} style={st.btnSec}>✏️ Modifier l'événement</button>
+            <button onClick={() => deleteEvent(selEv.id)} style={{ ...st.btnSec, color: '#a32d2d', borderColor: '#f5c6c6' }}>🗑 Supprimer</button>
+          </div>
+        </div>
+      )}
+
       {/* Récap mois */}
       {viewMode === 'mois' && (() => {
         const evMois = evenements.filter(e => {
@@ -447,7 +497,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
                         {new Date(ev.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
-                        {ev.ouvert && <span style={{ marginLeft: 6, color: '#3b6d11' }}>🔓</span>}
+                        {!ev.ouvert && <span style={{ marginLeft: 6, color: '#888' }}>🔒</span>}
                       </div>
                     </div>
                     <button onClick={e => { e.stopPropagation(); exportICS(ev, salaries, inscriptions); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Exporter .ics">📅</button>
@@ -474,7 +524,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{ev.nom || mt.label} {ev.ref && <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{ev.ref}</span>}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
                       {new Date(ev.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
-                      {ev.ouvert && <span style={{ marginLeft: 6, color: '#3b6d11' }}>🔓</span>}
+                      {!ev.ouvert && <span style={{ marginLeft: 6, color: '#888' }}>🔒</span>}
                     </div>
                   </div>
                   <button onClick={e => { e.stopPropagation(); exportICS(ev, salaries, inscriptions); }} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }} title="Exporter .ics">📅</button>
