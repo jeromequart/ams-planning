@@ -47,28 +47,38 @@ export default function ListeSalaries({ salaries, onClose }) {
 
       // Header
       doc.setFillColor(...RED);
-      doc.rect(0, 0, 210, 28, 'F');
+      doc.rect(0, 0, 210, 32, 'F');
+      // Logo croix blanche simulé
+      doc.setFillColor(255, 255, 255);
+      doc.rect(14, 8, 10, 10, 'F');
+      doc.setFillColor(...RED);
+      doc.rect(17.5, 8, 3, 10, 'F');
+      doc.rect(14, 11.5, 10, 3, 'F');
+      doc.setFillColor(255, 255, 255);
+      doc.rect(17.5, 8.5, 3, 9, 'F');
+      doc.rect(14.5, 11.5, 9, 3, 'F');
+      // Texte
       doc.setTextColor(255, 255, 255);
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setFont('helvetica', 'bold');
-      doc.text('AMS Croix Blanche', 14, 12);
-      doc.setFontSize(10);
+      doc.text('AMS Croix Blanche', 27, 15);
+      doc.setFontSize(9);
       doc.setFont('helvetica', 'normal');
-      doc.text('Liste des salariés saisonniers', 14, 20);
-      doc.text(`Édité le ${now}`, 196, 20, { align: 'right' });
+      doc.text('Liste des salariés saisonniers', 27, 22);
+      doc.text(`Édité le ${now}`, 196, 22, { align: 'right' });
 
       // Sous-titre
       doc.setTextColor(...GRAY);
-      doc.setFontSize(10);
-      doc.text(`${salaries.length} salarié${salaries.length > 1 ? 's' : ''} au total`, 14, 36);
+      doc.setFontSize(9);
+      doc.text(`${salaries.length} salarié${salaries.length > 1 ? 's' : ''} enregistré${salaries.length > 1 ? 's' : ''} — Document confidentiel`, 14, 40);
 
       // En-têtes tableau
       const headers = ['Nom', 'Prénom', 'Téléphone', 'Email', 'Diplômes', 'Âge'];
-      const colWidths = [35, 30, 32, 55, 32, 16];
+      const colWidths = [38, 32, 34, 52, 28, 18];
       const colX = [14];
       for (let i = 0; i < colWidths.length - 1; i++) colX.push(colX[i] + colWidths[i]);
 
-      let y = 42;
+      let y = 46;
       // Fond header tableau
       doc.setFillColor(...LIGHT);
       doc.rect(14, y, 182, 7, 'F');
@@ -81,7 +91,7 @@ export default function ListeSalaries({ salaries, onClose }) {
       // Lignes
       doc.setFont('helvetica', 'normal');
       salaries.sort((a, b) => a.nom.localeCompare(b.nom)).forEach((sal, idx) => {
-        if (y > 270) {
+        if (y > 265) {
           doc.addPage();
           y = 20;
           // Re-header
@@ -121,13 +131,18 @@ export default function ListeSalaries({ salaries, onClose }) {
         doc.text(email.length > 28 ? email.slice(0, 26) + '…' : email, colX[3] + 1, y + 5);
         doc.setFontSize(8.5);
 
-        doc.text(diplomes.join(', ') || '—', colX[4] + 1, y + 5);
+        const dipStr = diplomes.join(', ') || '—';
+        const dipTrunc = dipStr.length > 16 ? dipStr.slice(0, 14) + '…' : dipStr;
+        doc.text(dipTrunc, colX[4] + 1, y + 5);
 
-        // Âge avec badge mineur
+        // Âge
+        doc.setFontSize(8.5);
         if (age !== null) {
           if (isMineur) {
             doc.setTextColor(...RED);
-            doc.text(`${age} ans (-18)`, colX[5] + 1, y + 5);
+            doc.text(`${age} ans`, colX[5] + 1, y + 4);
+            doc.setFontSize(7);
+            doc.text('(-18)', colX[5] + 1, y + 8);
             doc.setTextColor(26, 26, 24);
           } else {
             doc.text(`${age} ans`, colX[5] + 1, y + 5);
@@ -141,7 +156,7 @@ export default function ListeSalaries({ salaries, onClose }) {
         // Ligne séparatrice légère
         doc.setDrawColor(220, 218, 212);
         doc.line(14, y + 7, 196, y + 7);
-        y += 8;
+        y += 9;
       });
 
       // Footer
