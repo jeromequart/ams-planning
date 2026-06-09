@@ -9,6 +9,12 @@ const AVATAR_COLORS = [
   {bg:'#faeeda',txt:'#854f0b'},{bg:'#eeedfe',txt:'#534ab7'},{bg:'#e1f5ee',txt:'#0f6e56'},{bg:'#fbeaf0',txt:'#993556'},
 ];
 
+
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function localNow() { return localDateStr(new Date()); }
+
 function dureeH(d,f){const[dh,dm]=d.split(':').map(Number);const[fh,fm]=f.split(':').map(Number);return(fh*60+fm-(dh*60+dm))/60;}
 function fmtH(h){if(h<=0)return'0h';const hh=Math.floor(h);const mm=Math.round((h-hh)*60);return mm?`${hh}h${String(mm).padStart(2,'0')}`:`${hh}h`;}
 function initiales(p,n){return((p?.[0]||'')+(n?.[0]||'')).toUpperCase();}
@@ -25,7 +31,7 @@ export default function SalarieApp({ session, onLogout }) {
   const [currentMonth, setCurrentMonth] = useState(() => { const d=new Date(); d.setDate(1); return d; });
   const [selectedEv, setSelectedEv] = useState(null);
 
-  const now = new Date().toISOString().slice(0,10);
+  const now = localNow();
 
   const loadData = useCallback(async () => {
     try {
@@ -154,7 +160,7 @@ export default function SalarieApp({ session, onLogout }) {
         {tab === 'calendrier' && (() => {
           const MONTHS_C = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
           const DAYS_C = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
-          const todayS = new Date().toISOString().slice(0,10);
+          const todayS = localNow();
           const addD = (date,n) => { const d=new Date(date); d.setDate(d.getDate()+n); return d; };
           const toM = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
           const CELL = 44;
@@ -195,7 +201,7 @@ export default function SalarieApp({ session, onLogout }) {
                   <div style={{ display:'grid', gridTemplateColumns:'36px repeat(7,1fr)', borderBottom:'1px solid #eee' }}>
                     <div/>
                     {wDays.map((d,i)=>{
-                      const ds=d.toISOString().slice(0,10); const isT=ds===todayS;
+                      const ds=localDateStr(d); const isT=ds===todayS;
                       return <div key={i} style={{ padding:'7px 2px', textAlign:'center', borderRight:i<6?'1px solid #eee':'none', background:isT?'#fff5f5':'transparent' }}>
                         <div style={{ fontSize:9, color:'#bbb', textTransform:'uppercase', fontWeight:500 }}>{DAYS_C[i]}</div>
                         <div style={{ fontSize:14, fontWeight:600, color:isT?'#a32d2d':'#1a1a18', width:22, height:22, borderRadius:'50%', background:isT?'#fcebeb':'transparent', display:'flex', alignItems:'center', justifyContent:'center', margin:'2px auto 0' }}>{d.getDate()}</div>
@@ -222,9 +228,9 @@ export default function SalarieApp({ session, onLogout }) {
                           const height=Math.max(((toM(ev.fin)-toM(ev.debut))/GTOTAL)*(16*CELL),20);
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:mt.bg, borderLeft:`3px solid ${mt.color}`, borderRadius:4, padding:'2px 4px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.75, zIndex: 1 + evIdx }}>
-                            <div style={{ fontSize:9, fontWeight:700, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
-                            {height>26&&<div style={{ fontSize:9, color:mt.color, opacity:0.7 }}>{ev.debut}–{ev.fin}</div>}
+                            style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:mt.color, borderLeft:`3px solid rgba(0,0,0,0.2)`, borderRadius:4, padding:'2px 4px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.75, zIndex: 1 + evIdx }}>
+                            <div style={{ fontSize:9, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
+                            {height>26&&<div style={{ fontSize:9, color:'rgba(255,255,255,0.85)' }}>{ev.debut}–{ev.fin}</div>}
                           </div>;
                         })}
                       </div>;
@@ -247,7 +253,7 @@ export default function SalarieApp({ session, onLogout }) {
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)' }}>
                     {cells.map((d,i)=>{
-                      const ds=d.toISOString().slice(0,10);
+                      const ds=localDateStr(d);
                       const isCur=d.getMonth()===mo; const isT=ds===todayS;
                       const dayEvs=evMo.filter(e=>e.date===ds);
                       return <div key={i} style={{ minHeight:72, padding:'3px 2px', borderRight:i%7<6?'1px solid #eee':'none', borderBottom:i<total-7?'1px solid #eee':'none', background:isT?'#fffaf9':!isCur?'#fafaf8':'#fff' }}>
@@ -256,8 +262,8 @@ export default function SalarieApp({ session, onLogout }) {
                           const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ background:mt.bg, borderLeft:`2px solid ${mt.color}`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
-                            <div style={{ fontSize:9, fontWeight:600, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
+                            style={{ background:mt.color, borderLeft:`2px solid rgba(0,0,0,0.15)`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
+                            <div style={{ fontSize:9, fontWeight:600, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
                           </div>;
                         })}
                         {dayEvs.length>2&&<div style={{ fontSize:9, color:'#bbb' }}>+{dayEvs.length-2}</div>}
@@ -343,7 +349,7 @@ export default function SalarieApp({ session, onLogout }) {
                       <div style={{ flex:1 }}>
                         {ev.nom && <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>{ev.nom}</div>}
                         {ev.ref && <div style={{ fontSize:11, color:'#888', fontFamily:'var(--font-mono)', marginBottom:6 }}>{ev.ref}</div>}
-                        <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span>
+                        <span style={{ background:mt.color, color:'#fff', fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:600 }}>{mt.icon} {mt.label}</span>
                         {ev.lieu && <span style={{ fontSize:12, color:'#888', marginLeft:8 }}>📍 {ev.lieu}</span>}
                       </div>
                       <div style={{ textAlign:'right', flexShrink:0, marginLeft:12 }}>
@@ -382,7 +388,7 @@ export default function SalarieApp({ session, onLogout }) {
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:8 }}>
                       <div>
                         {ev.nom && <div style={{ fontSize:15, fontWeight:700, marginBottom:4 }}>{ev.nom}</div>}
-                        <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span>
+                        <span style={{ background:mt.color, color:'#fff', fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:600 }}>{mt.icon} {mt.label}</span>
                       </div>
                       <button
                         onClick={() => sInscrire(ev.id)}
