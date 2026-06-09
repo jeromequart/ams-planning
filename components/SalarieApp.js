@@ -27,6 +27,7 @@ export default function SalarieApp({ session, onLogout }) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('planning');
   const [calView, setCalView] = useState('semaine');
+  const [currentDay, setCurrentDay] = useState(() => new Date());
   const [weekStart, setWeekStart] = useState(() => { const d=new Date(); const diff=d.getDay()===0?-6:1-d.getDay(); d.setDate(d.getDate()+diff); d.setHours(0,0,0,0); return d; });
   const [currentMonth, setCurrentMonth] = useState(() => { const d=new Date(); d.setDate(1); return d; });
   const [selectedEv, setSelectedEv] = useState(null);
@@ -175,7 +176,7 @@ export default function SalarieApp({ session, onLogout }) {
               {/* Toggle + nav */}
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                 <div style={{ display:'flex', gap:3, background:'#f8f6f2', borderRadius:8, padding:3 }}>
-                  {[{k:'semaine',l:'Semaine'},{k:'mois',l:'Mois'}].map(({k,l})=>(
+                  {[{k:'jour',l:'Jour'},{k:'semaine',l:'Semaine'},{k:'mois',l:'Mois'}].map(({k,l})=>( 
                     <button key={k} onClick={()=>setCalView(k)} style={{ padding:'5px 12px', borderRadius:6, border:'none', fontSize:12, fontWeight:calView===k?600:400, background:calView===k?'#fff':'transparent', color:calView===k?'#1a1a18':'#888', cursor:'pointer' }}>{l}</button>
                   ))}
                 </div>
@@ -186,6 +187,14 @@ export default function SalarieApp({ session, onLogout }) {
                     <button onClick={()=>setWeekStart(d=>addD(d,7))} style={{ background:'#fff', border:'1px solid #ddd', borderRadius:7, width:28, height:28, cursor:'pointer', fontSize:16 }}>›</button>
                   </div>
                 )}
+                {calView==='jour' && (
+                  <div style={{ display:'flex', gap:6, alignItems:'center' }}>
+                    <button onClick={()=>setCurrentDay(d=>{const n=new Date(d);n.setDate(n.getDate()-1);return n;})} style={{ background:'#fff', border:'1px solid #ddd', borderRadius:7, width:28, height:28, cursor:'pointer', fontSize:16 }}>‹</button>
+                    <button onClick={()=>setCurrentDay(new Date())} style={{ background:'#fff', border:'1px solid #ddd', borderRadius:8, padding:'0 10px', height:28, cursor:'pointer', fontSize:11 }}>Auj.</button>
+                    <span style={{ fontSize:13, fontWeight:600 }}>{['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'][(currentDay.getDay()+6)%7]} {currentDay.getDate()} {['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'][currentDay.getMonth()]} {currentDay.getFullYear()}</span>
+                    <button onClick={()=>setCurrentDay(d=>{const n=new Date(d);n.setDate(n.getDate()+1);return n;})} style={{ background:'#fff', border:'1px solid #ddd', borderRadius:7, width:28, height:28, cursor:'pointer', fontSize:16 }}>›</button>
+                  </div>
+                )}
                 {calView==='mois' && (
                   <div style={{ display:'flex', gap:6, alignItems:'center' }}>
                     <button onClick={()=>setCurrentMonth(new Date(currentMonth.getFullYear(),currentMonth.getMonth()-1,1))} style={{ background:'#fff', border:'1px solid #ddd', borderRadius:7, width:28, height:28, cursor:'pointer', fontSize:16 }}>‹</button>
@@ -194,6 +203,89 @@ export default function SalarieApp({ session, onLogout }) {
                   </div>
                 )}
               </div>
+
+              {/* Jour */}
+              {calView==='jour' && (() => {
+                const todayS2 = localNow();
+                const ds = localDateStr(currentDay);
+                const isToday = ds === todayS2;
+                const HOURS_DAY = Array.from({length:18},(_,i)=>i+6);
+                const CELL_D = 56;
+                const GSTART_D = 6*60;
+                const GTOTAL_D = (24-6)*60;
+                const toM2 = t => { const [h,m]=t.split(':').map(Number); return h*60+m; };
+                const dayEvs = evenements.filter(e => e.date === ds).sort((a,b)=>a.debut.localeCompare(b.debut));
+                const isMine2 = (ev) => !!mesEvsValides.find(e=>e.id===ev.id);
+                return (
+                  <div style={{ background:'#fff', borderRadius:12, border:'1px solid #eee', overflow:'hidden' }}>
+                    {/* Header jour */}
+                    <div style={{ padding:'12px 16px', borderBottom:'1px solid #eee', display:'flex', alignItems:'center', gap:12 }}>
+                      <div style={{ width:36, height:36, borderRadius:'50%', background:isToday?'#a32d2d':'#f8f6f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, fontWeight:700, color:isToday?'#fff':'#1a1a18' }}>
+                        {currentDay.getDate()}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:14, fontWeight:600, color:'#1a1a18' }}>
+                          {['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][(currentDay.getDay()+6)%7]}
+                        </div>
+                        <div style={{ fontSize:12, color:'#888' }}>{dayEvs.length} événement{dayEvs.length>1?'s':''}</div>
+                      </div>
+                    </div>
+                    {dayEvs.length === 0 ? (
+                      <div style={{ textAlign:'center', padding:'48px 20px', color:'#bbb' }}>
+                        <div style={{ fontSize:32, marginBottom:8 }}>📅</div>
+                        <div style={{ fontSize:13 }}>Aucun événement ce jour</div>
+                      </div>
+                    ) : (
+                      <div style={{ display:'grid', gridTemplateColumns:'44px 1fr', overflowY:'auto', maxHeight:520 }}>
+                        {/* Heures */}
+                        <div style={{ borderRight:'1px solid #eee' }}>
+                          {HOURS_DAY.map(h=>(
+                            <div key={h} style={{ height:CELL_D, borderBottom:'1px solid #f5f5f5', display:'flex', alignItems:'flex-start', justifyContent:'flex-end', paddingRight:6, paddingTop:3 }}>
+                              <span style={{ fontSize:10, color:'#bbb' }}>{h}h</span>
+                            </div>
+                          ))}
+                        </div>
+                        {/* Colonne events */}
+                        <div style={{ position:'relative' }}>
+                          {HOURS_DAY.map(h=><div key={h} style={{ height:CELL_D, borderBottom:'1px solid #f8f6f2' }}/>)}
+                          {dayEvs.map((ev, evIdx) => {
+                            const mt = missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
+                            const top = ((toM2(ev.debut)-GSTART_D)/GTOTAL_D)*(HOURS_DAY.length*CELL_D);
+                            const h = Math.max(((toM2(ev.fin)-toM2(ev.debut))/GTOTAL_D)*(HOURS_DAY.length*CELL_D), 40);
+                            const isMine = isMine2(ev);
+                            const overlap = dayEvs.slice(0,evIdx).filter(prev => {
+                              const pt = ((toM2(prev.debut)-GSTART_D)/GTOTAL_D)*(HOURS_DAY.length*CELL_D);
+                              const ph = Math.max(((toM2(prev.fin)-toM2(prev.debut))/GTOTAL_D)*(HOURS_DAY.length*CELL_D),40);
+                              return top < pt+ph && top+h > pt;
+                            }).length;
+                            const colCount = overlap + 1;
+                            const colWidth = `${Math.floor(98/colCount)}%`;
+                            const colLeft = `${overlap * Math.floor(98/colCount)}%`;
+                            return (
+                              <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
+                                style={{ position:'absolute', left:colLeft, width:colWidth, top, height:h,
+                                  background:'#fff', borderLeft:`4px solid ${mt.color}`,
+                                  borderRadius:6, padding:'5px 8px', cursor:'pointer',
+                                  boxShadow:'0 1px 4px rgba(0,0,0,0.1)',
+                                  opacity: isMine?1:0.75, zIndex:1+evIdx,
+                                  borderTop:`1px solid ${mt.color}22`,
+                                  borderRight:`1px solid ${mt.color}22`,
+                                  borderBottom:`1px solid ${mt.color}22`,
+                                }}>
+                                <div style={{ fontSize:11, fontWeight:700, color:mt.color, marginBottom:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.nom||mt.label}</div>
+                                <div style={{ fontSize:11, color:'#555' }}>{ev.debut} – {ev.fin}</div>
+                                {h>60 && ev.lieu && <div style={{ fontSize:10, color:'#888', marginTop:2 }}>📍 {ev.lieu}</div>}
+                                {h>80 && ev.note && <div style={{ fontSize:10, color:'#888', fontStyle:'italic', marginTop:2, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>💬 {ev.note}</div>}
+                                {isMine && <div style={{ position:'absolute', top:4, right:6, fontSize:9, background:mt.color, color:'#fff', borderRadius:10, padding:'1px 5px' }}>✓ inscrit</div>}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Semaine */}
               {calView==='semaine' && (
