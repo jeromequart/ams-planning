@@ -80,7 +80,7 @@ export default function SalarieApp({ session, onLogout }) {
   const mesInscriptions = inscriptions.filter(i => i.salarieId === salarie.id);
   const mesEvsValides = evenements.filter(e => mesInscriptions.find(i => i.evenementId === e.id && i.statut === 'valide')).sort((a,b)=>a.date.localeCompare(b.date));
   const mesEvsEnAttente = evenements.filter(e => mesInscriptions.find(i => i.evenementId === e.id && i.statut === 'en_attente'));
-  const evOuverts = evenements.filter(e => e.ouvert && e.date >= now && !mesInscriptions.find(i => i.evenementId === e.id));
+  const evOuverts = evenements.filter(e => e.date >= now && !mesInscriptions.find(i => i.evenementId === e.id));
   const hEffectuees = mesEvsValides.filter(e=>e.date<now).reduce((s,e)=>s+dureeH(e.debut,e.fin),0);
   const hAVenir = mesEvsValides.filter(e=>e.date>=now).reduce((s,e)=>s+dureeH(e.debut,e.fin),0);
   const prochaine = mesEvsValides.find(e=>e.date>=now);
@@ -124,7 +124,7 @@ export default function SalarieApp({ session, onLogout }) {
           <div style={{ fontSize:11, opacity:0.8, marginBottom:4 }}>Prochaine mission</div>
           <div style={{ fontSize:16, fontWeight:700 }}>{prochaine.nom || 'Mission planifiée'}</div>
           <div style={{ fontSize:13, opacity:0.9, marginTop:4 }}>
-            {DAYS[new Date(prochaine.date).getDay()]} {new Date(prochaine.date).getDate()} {MONTHS[new Date(prochaine.date).getMonth()]} · {prochaine.debut}–{prochaine.fin}
+            {DAYS[new Date(prochaine.date + 'T12:00:00').getDay()]} {new Date(prochaine.date + 'T12:00:00').getDate()} {MONTHS[new Date(prochaine.date + 'T12:00:00').getMonth()]} · {prochaine.debut}–{prochaine.fin}
           </div>
           {prochaine.lieu && <div style={{ fontSize:12, opacity:0.8, marginTop:2 }}>📍 {prochaine.lieu}</div>}
         </div>
@@ -215,15 +215,15 @@ export default function SalarieApp({ session, onLogout }) {
                       const dayEvs=evenements.filter(e=>e.date===ds);
                       return <div key={di} style={{ borderRight:di<6?'1px solid #eee':'none', background:isT?'#fffaf9':'transparent', position:'relative' }}>
                         {Array.from({length:16},(_,i)=>i+6).map(h=><div key={h} style={{ height:CELL, borderBottom:'1px solid #f8f6f2' }}/>)}
-                        {dayEvs.map(ev=>{
+                        {dayEvs.map((ev,evIdx)=>{
                           const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
                           const GSTART=6*60; const GTOTAL=(22-6)*60;
                           const top=((toM(ev.debut)-GSTART)/GTOTAL)*(16*CELL);
                           const height=Math.max(((toM(ev.fin)-toM(ev.debut))/GTOTAL)*(16*CELL),20);
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ position:'absolute', left:2, right:2, top, height, background:mt.bg, borderLeft:`3px solid ${mt.color}`, borderRadius:4, padding:'2px 4px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.55, zIndex:1 }}>
-                            <div style={{ fontSize:9, fontWeight:700, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.nom||mt.label}</div>
+                            style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:mt.bg, borderLeft:`3px solid ${mt.color}`, borderRadius:4, padding:'2px 4px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.75, zIndex: 1 + evIdx }}>
+                            <div style={{ fontSize:9, fontWeight:700, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
                             {height>26&&<div style={{ fontSize:9, color:mt.color, opacity:0.7 }}>{ev.debut}–{ev.fin}</div>}
                           </div>;
                         })}
@@ -256,8 +256,8 @@ export default function SalarieApp({ session, onLogout }) {
                           const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ background:mt.bg, borderLeft:`2px solid ${mt.color}`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.55 }}>
-                            <div style={{ fontSize:9, fontWeight:600, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
+                            style={{ background:mt.bg, borderLeft:`2px solid ${mt.color}`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
+                            <div style={{ fontSize:9, fontWeight:600, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
                           </div>;
                         })}
                         {dayEvs.length>2&&<div style={{ fontSize:9, color:'#bbb' }}>+{dayEvs.length-2}</div>}
@@ -282,7 +282,7 @@ export default function SalarieApp({ session, onLogout }) {
                     const isMine=!!mesEvsValides.find(e=>e.id===selectedEv.id);
                     const isEnAttente=!!mesInscriptions.find(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');
                     return <div style={{ fontSize:13, color:'#555', display:'flex', flexDirection:'column', gap:5 }}>
-                      <div>📅 {new Date(selectedEv.date).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+                      <div>📅 {new Date(selectedEv.date + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
                       <div>🕐 {selectedEv.debut} – {selectedEv.fin} ({fmtH(dureeH(selectedEv.debut,selectedEv.fin))})</div>
                       {selectedEv.lieu&&<div>📍 {selectedEv.lieu}</div>}
                       <div><span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'2px 8px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span></div>
@@ -317,7 +317,7 @@ export default function SalarieApp({ session, onLogout }) {
                     <div key={ev.id} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:6 }}>
                       <div>
                         <span style={{ fontSize:13, fontWeight:500 }}>{ev.nom || mt.label}</span>
-                        <span style={{ fontSize:11, color:'#888', marginLeft:8 }}>{new Date(ev.date).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
+                        <span style={{ fontSize:11, color:'#888', marginLeft:8 }}>{new Date(ev.date + 'T12:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>
                       </div>
                       <button onClick={() => insc && seDesinscrire(insc.id)} style={{ background:'none', border:'none', color:'#888', cursor:'pointer', fontSize:12 }}>Annuler</button>
                     </div>
@@ -385,11 +385,11 @@ export default function SalarieApp({ session, onLogout }) {
                         <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span>
                       </div>
                       <button
-                        onClick={() => !complet && sInscrire(ev.id)}
-                        disabled={complet}
-                        style={{ background:complet?'#f1efe8':'#a32d2d', color:complet?'#aaa':'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:complet?'not-allowed':'pointer', flexShrink:0, fontFamily:'var(--font)' }}
+                        onClick={() => sInscrire(ev.id)}
+                        
+                        style={{ background:complet?'#f1efe8':'#a32d2d', color:complet?'#aaa':'#fff', border:'none', borderRadius:10, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', flexShrink:0, fontFamily:'var(--font)' }}
                       >
-                        {complet ? 'Complet' : "M'inscrire"}
+                        "M'inscrire"
                       </button>
                     </div>
                     <div style={{ fontSize:13, color:'#555', marginTop:6 }}>
