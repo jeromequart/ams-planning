@@ -68,9 +68,9 @@ function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectE
     return d;
   });
 
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
   const evMonth = evenements.filter(e => {
-    const d = new Date(e.date);
+    const d = new Date(e.date + 'T12:00:00');
     return d.getFullYear() === year && d.getMonth() === month;
   });
 
@@ -171,9 +171,9 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
   const [showInscriptions, setShowInscriptions] = useState(false);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayStr = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
   const evWeek = evenements.filter(e => {
-    const d = new Date(e.date);
+    const d = new Date(e.date + 'T12:00:00');
     return d >= weekStart && d < addDays(weekStart, 7);
   });
 
@@ -305,7 +305,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                     <div key={h} style={{ height: CELL_H, borderBottom: '1px solid #f0ede6' }}
                       onClick={() => clickCell(ds, (h - 6) * CELL_H)} />
                   ))}
-                  {dayEvs.map(ev => {
+                  {dayEvs.map((ev, dayEvIdx) => {
                     const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label: ev.type, icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
                     const evInscrits = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'valide');
                     const top = ((toMin(ev.debut) - GRID_START) / GRID_TOTAL) * (HOURS.length * CELL_H);
@@ -345,7 +345,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
 
             {/* Infos */}
             <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
-              <div>📅 {new Date(selEv.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+              <div>📅 {new Date(selEv.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
               <div>🕐 {selEv.debut} – {selEv.fin}</div>
               {selEv.lieu && <div>📍 {selEv.lieu}</div>}
               {(() => { const mt = missionTypes[selEv.type] || {}; return <div><span style={{ background: mt.bg, color: mt.color, fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{mt.icon} {mt.label}</span></div>; })()}
@@ -434,7 +434,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
             <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-3)' }}>✕</button>
           </div>
           <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
-            <div>📅 {new Date(selEv.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            <div>📅 {new Date(selEv.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
             <div>🕐 {selEv.debut} – {selEv.fin}</div>
             {selEv.lieu && <div>📍 {selEv.lieu}</div>}
             {(() => { const mt = missionTypes[selEv.type] || {}; return <div><span style={{ background: mt.bg, color: mt.color, fontSize: 11, padding: '2px 8px', borderRadius: 20, fontWeight: 500 }}>{mt.icon} {mt.label}</span></div>; })()}
@@ -476,7 +476,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
       {/* Récap mois */}
       {viewMode === 'mois' && (() => {
         const evMois = evenements.filter(e => {
-          const d = new Date(e.date);
+          const d = new Date(e.date + 'T12:00:00');
           return d.getFullYear() === currentMonth.getFullYear() && d.getMonth() === currentMonth.getMonth();
         });
         if (evMois.length === 0) return null;
@@ -498,7 +498,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                         {ev.nom || mt.label} {ev.ref && <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{ev.ref}</span>}
                       </div>
                       <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                        {new Date(ev.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
+                        {new Date(ev.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
                         {!ev.ouvert && <span style={{ marginLeft: 6, color: '#888' }}>🔒</span>}
                       </div>
                     </div>
@@ -525,7 +525,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13, fontWeight: 500 }}>{ev.nom || mt.label} {ev.ref && <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)' }}>{ev.ref}</span>}</div>
                     <div style={{ fontSize: 11, color: 'var(--text-2)' }}>
-                      {new Date(ev.date).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
+                      {new Date(ev.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} · {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} salarié{evInscrits.length > 1 ? 's' : ''}
                       {!ev.ouvert && <span style={{ marginLeft: 6, color: '#888' }}>🔒</span>}
                     </div>
                   </div>
