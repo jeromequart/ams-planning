@@ -217,7 +217,7 @@ export default function SalarieApp({ session, onLogout }) {
                       ))}
                     </div>
                     {wDays.map((day,di)=>{
-                      const ds=day.toISOString().slice(0,10); const isT=ds===todayS;
+                      const ds=localDateStr(day); const isT=ds===todayS;
                       const dayEvs=evenements.filter(e=>e.date===ds);
                       return <div key={di} style={{ borderRight:di<6?'1px solid #eee':'none', background:isT?'#fffaf9':'transparent', position:'relative' }}>
                         {Array.from({length:16},(_,i)=>i+6).map(h=><div key={h} style={{ height:CELL, borderBottom:'1px solid #f8f6f2' }}/>)}
@@ -228,9 +228,9 @@ export default function SalarieApp({ session, onLogout }) {
                           const height=Math.max(((toM(ev.fin)-toM(ev.debut))/GTOTAL)*(16*CELL),20);
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:mt.color, borderLeft:`3px solid rgba(0,0,0,0.2)`, borderRadius:4, padding:'2px 4px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.75, zIndex: 1 + evIdx }}>
-                            <div style={{ fontSize:9, fontWeight:700, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
-                            {height>26&&<div style={{ fontSize:9, color:'rgba(255,255,255,0.85)' }}>{ev.debut}–{ev.fin}</div>}
+                            style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:'#fff', borderLeft:`3px solid ${mt.color}`, borderRadius:4, padding:'2px 5px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.85, zIndex: 1 + evIdx, boxShadow:'0 1px 3px rgba(0,0,0,0.12)' }}>
+                            <div style={{ fontSize:9, fontWeight:700, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
+                            {height>26&&<div style={{ fontSize:9, color:'#555' }}>{ev.debut}–{ev.fin}</div>}
                           </div>;
                         })}
                       </div>;
@@ -262,7 +262,7 @@ export default function SalarieApp({ session, onLogout }) {
                           const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
                           return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
-                            style={{ background:mt.color, borderLeft:`2px solid rgba(0,0,0,0.15)`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
+                            style={{ background:'#fff', borderLeft:`3px solid ${mt.color}`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
                             <div style={{ fontSize:9, fontWeight:600, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
                           </div>;
                         })}
