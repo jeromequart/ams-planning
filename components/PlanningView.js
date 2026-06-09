@@ -10,6 +10,11 @@ const GRID_START = 6 * 60;
 const GRID_END = 23 * 60;
 const GRID_TOTAL = GRID_END - GRID_START;
 
+
+function localDateStr(d) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
 function getMonday(date) {
   const d = new Date(date);
   const diff = d.getDay() === 0 ? -6 : 1 - d.getDay();
@@ -68,13 +73,13 @@ function MonthView({ evenements, inscriptions, salaries, missionTypes, onSelectE
     return d;
   });
 
-  const todayStr = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
+  const todayStr = localDateStr(new Date());
   const evMonth = evenements.filter(e => {
     const d = new Date(e.date + 'T12:00:00');
     return d.getFullYear() === year && d.getMonth() === month;
   });
 
-  function fmtCell(d) { return d.toISOString().slice(0, 10); }
+  function fmtCell(d) { return localDateStr(d); }
 
   return (
     <div>
@@ -171,7 +176,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
   const [showInscriptions, setShowInscriptions] = useState(false);
 
   const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const todayStr = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
+  const todayStr = localDateStr(new Date());
   const evWeek = evenements.filter(e => {
     const d = new Date(e.date + 'T12:00:00');
     return d >= weekStart && d < addDays(weekStart, 7);
@@ -271,7 +276,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           <div style={{ display: 'grid', gridTemplateColumns: '48px repeat(7, 1fr)', borderBottom: '1px solid var(--border)' }}>
             <div style={{ borderRight: '1px solid var(--border)' }} />
             {weekDays.map((d, i) => {
-              const ds = d.toISOString().slice(0, 10);
+              const ds = localDateStr(d);
               const isToday = ds === todayStr;
               return (
                 <div key={i} style={{ padding: '10px 4px', textAlign: 'center', borderRight: i < 6 ? '1px solid var(--border)' : 'none', background: isToday ? '#fff5f5' : 'transparent' }}>
@@ -295,7 +300,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
 
             {/* Colonnes jours */}
             {weekDays.map((day, di) => {
-              const ds = day.toISOString().slice(0, 10);
+              const ds = localDateStr(day);
               const isToday = ds === todayStr;
               const dayEvs = evWeek.filter(e => e.date === ds);
               return (
