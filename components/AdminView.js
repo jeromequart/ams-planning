@@ -41,7 +41,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
   const [compteForm, setCompteForm] = useState({ email:'', password:'' });
   const [compteMsg, setCompteMsg] = useState('');
   const [compteSaving, setCompteSaving] = useState(false);
-  const now = new Date().toISOString().slice(0,10);
+  const now = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
 
   const salarie = salaries.find(s => s.id === selected);
   const mesInscriptions = inscriptions.filter(i => i.salarieId === selected && i.statut === 'valide');
