@@ -6,7 +6,7 @@ import { LIEUX_FREQUENTS } from '../data/config';
 const FORM_VIDE = {
   nom: '', ref: '', date: '', debut: '08:00', fin: '17:00',
   type: 'dps', lieu: '', lieuCustom: '', note: '',
-  effectif: 1, ouvert: false,
+  effectif: 1, ouvert: true,
   tenue: 'blanche', repas: false,
   heureDepart: '', arriveeSurPlace: false,
 };
@@ -29,7 +29,7 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
     fin: editEvent.fin || '17:00', type: editEvent.type || 'dps',
     lieu: editEvent.lieu || '', lieuCustom: '',
     note: editEvent.note || '', effectif: editEvent.effectif || 1,
-    ouvert: editEvent.ouvert || false,
+    ouvert: editEvent.ouvert !== undefined ? editEvent.ouvert : true,
     tenue: editEvent.tenue || 'blanche',
     repas: editEvent.repas || false,
     heureDepart: editEvent.heureDepart || '',
