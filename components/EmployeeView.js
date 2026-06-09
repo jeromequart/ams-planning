@@ -40,7 +40,7 @@ export default function EmployeeView({ salaries, evenements, inscriptions, addIn
   const [sel, setSel] = useState(salaries[0]?.id || null);
   const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois' | 'planning'
   const salarie = salaries.find(s => s.id === sel) || salaries[0];
-  const now = new Date().toISOString().slice(0,10);
+  const now = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
 
   if (!salarie) return (
     <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-2)' }}>
