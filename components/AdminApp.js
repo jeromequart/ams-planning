@@ -176,7 +176,7 @@ export default function AdminApp({ onLogout }) {
         ) : error ? (
           <div style={{ textAlign:'center', padding:'80px', color:'#a32d2d' }}><div>{error}</div><button onClick={loadAll} style={{ marginTop:16, padding:'8px 20px', background:'#a32d2d', color:'#fff', border:'none', borderRadius:8, cursor:'pointer' }}>Réessayer</button></div>
         ) : mode==='planning' ? (
-          <PlanningView salaries={salaries} evenements={evenements} addEvenement={addEvenement} updateEvenement={updateEvenement} removeEvenement={removeEvenement} inscriptions={inscriptions} addInscription={addInscription} updateInscription={updateInscription} removeInscription={removeInscription} missionTypes={missionTypes} />
+          <PlanningView salaries={salaries} evenements={evenements} addEvenement={addEvenement} updateEvenement={updateEvenement} removeEvenement={removeEvenement} inscriptions={inscriptions} addInscription={addInscription} updateInscription={updateInscription} removeInscription={removeInscription} missionTypes={missionTypes} vehicules={vehicules} evenementVehicules={evenementVehicules} loadEvenementVehicules={loadEvenementVehicules} saveEvenementVehicules={saveEvenementVehicules} envoyerConvocations={envoyerConvocations} />
         ) : mode==='validation' ? (
           <ValidationMensuelle
             salaries={salaries} evenements={evenements}
