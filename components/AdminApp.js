@@ -6,6 +6,7 @@ import MissionsConfig from './MissionsConfig';
 import AdminView from './AdminView';
 import ValidationMensuelle from './ValidationMensuelle';
 import ListeSalaries from './ListeSalaries';
+import ImportSalaries from './ImportSalaries';
 import { MISSION_TYPES } from '../data/config';
 import * as db from '../lib/db';
 import { getVehicules, getEvenementVehicules, addEvenementVehicule, deleteAllEvenementVehicules } from '../lib/db';
@@ -114,6 +115,7 @@ export default function AdminApp({ onLogout }) {
   }
 
   const [showListe, setShowListe] = useState(false);
+  const [showImport, setShowImport] = useState(false);
   const [vehicules, setVehicules] = useState([]);
   const [evenementVehicules, setEvenementVehicules] = useState({});
   const nbAttente = inscriptions.filter(i=>i.statut==='en_attente').length;
@@ -158,6 +160,9 @@ export default function AdminApp({ onLogout }) {
             <button onClick={() => setShowListe(true)} style={{ background:'#f8f6f2', border:'1px solid var(--border)', borderRadius:8, padding:'6px 12px', fontSize:12, cursor:'pointer', fontFamily:'var(--font)', color:'var(--text-2)' }}>
               👥 Liste salariés
             </button>
+            <button onClick={() => setShowImport(true)} style={{ background:'#eaf3de', border:'1px solid #c0dd97', borderRadius:8, padding:'6px 12px', fontSize:12, cursor:'pointer', fontFamily:'var(--font)', color:'#3b6d11', fontWeight:500 }}>
+              📥 Importer salariés
+            </button>
             <button onClick={onLogout} style={{ background:'#f8f6f2', border:'1px solid var(--border)', borderRadius:8, padding:'6px 12px', fontSize:12, cursor:'pointer', fontFamily:'var(--font)', color:'var(--text-2)' }}>
               Déconnexion
             </button>
@@ -189,6 +194,7 @@ export default function AdminApp({ onLogout }) {
         )}
       </main>
       {showListe && <ListeSalaries salaries={salaries} onClose={() => setShowListe(false)} />}
+      {showImport && <ImportSalaries onClose={() => setShowImport(false)} onImported={loadAll} />}
     </div>
   );
 }
