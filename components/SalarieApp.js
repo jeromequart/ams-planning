@@ -365,39 +365,65 @@ export default function SalarieApp({ session, onLogout }) {
                 </div>;
               })()}
 
-              {/* Détail — lecture seule */}
-              {selectedEv && (
-                <div style={{ background:'#fff', borderRadius:12, border:'1px solid #eee', padding:'14px 16px', marginTop:10 }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:10 }}>
-                    <div>
-                      <div style={{ fontSize:15, fontWeight:700 }}>{selectedEv.nom||'(sans nom)'}</div>
-                      {selectedEv.ref&&<div style={{ fontSize:11, color:'#aaa', fontFamily:'monospace', marginTop:2 }}>{selectedEv.ref}</div>}
+              {/* Détail événement */}
+              {selectedEv && (() => {
+                const mt = missionTypes[selectedEv.type]||Object.values(missionTypes)[0]||{label:selectedEv.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
+                const isMine = !!mesEvsValides.find(e=>e.id===selectedEv.id);
+                const isEnAttente = !!mesInscriptions.find(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');
+                return (
+                  <div style={{ background:'#fff', borderRadius:14, border:`2px solid ${mt.color}33`, marginTop:12, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.1)' }}>
+                    <div style={{ background:mt.color, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                        <span style={{ fontSize:24 }}>{mt.icon}</span>
+                        <div>
+                          <div style={{ fontSize:16, fontWeight:700, color:'#fff' }}>{selectedEv.nom||'(sans nom)'}</div>
+                          {selectedEv.ref&&<div style={{ fontSize:11, color:'rgba(255,255,255,0.75)', fontFamily:'monospace' }}>{selectedEv.ref}</div>}
+                        </div>
+                      </div>
+                      <button onClick={()=>setSelectedEv(null)} style={{ background:'rgba(255,255,255,0.2)', border:'none', borderRadius:8, width:30, height:30, cursor:'pointer', fontSize:18, color:'#fff', display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
                     </div>
-                    <button onClick={()=>setSelectedEv(null)} style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#aaa' }}>✕</button>
+                    <div style={{ padding:'14px 16px' }}>
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
+                        <div style={{ background:'#f8f8f8', borderRadius:8, padding:'10px 12px' }}>
+                          <div style={{ fontSize:10, color:'#aaa', marginBottom:3, textTransform:'uppercase', letterSpacing:'0.04em' }}>Date</div>
+                          <div style={{ fontSize:13, fontWeight:600 }}>{new Date(selectedEv.date+'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+                        </div>
+                        <div style={{ background:'#f8f8f8', borderRadius:8, padding:'10px 12px' }}>
+                          <div style={{ fontSize:10, color:'#aaa', marginBottom:3, textTransform:'uppercase', letterSpacing:'0.04em' }}>Horaires</div>
+                          <div style={{ fontSize:13, fontWeight:600 }}>{selectedEv.debut} – {selectedEv.fin} <span style={{ fontSize:11, color:'#888', fontWeight:400 }}>({fmtH(dureeH(selectedEv.debut,selectedEv.fin))})</span></div>
+                        </div>
+                        {selectedEv.lieu&&<div style={{ background:'#f8f8f8', borderRadius:8, padding:'10px 12px', gridColumn:'span 2' }}>
+                          <div style={{ fontSize:10, color:'#aaa', marginBottom:3, textTransform:'uppercase', letterSpacing:'0.04em' }}>Lieu</div>
+                          <div style={{ fontSize:13, fontWeight:600 }}>📍 {selectedEv.lieu}</div>
+                        </div>}
+                      </div>
+                      {(selectedEv.tenue||selectedEv.repas!==undefined||selectedEv.heureDepart)&&(
+                        <div style={{ display:'flex', gap:6, flexWrap:'wrap', marginBottom:12 }}>
+                          {selectedEv.tenue&&<span style={{ fontSize:11, padding:'4px 10px', borderRadius:20, background:selectedEv.tenue==='bleue'?'#e6f1fb':'#f0f0f0', color:selectedEv.tenue==='bleue'?'#185fa5':'#555', fontWeight:500 }}>👕 Tenue {selectedEv.tenue}</span>}
+                          {selectedEv.repas?<span style={{ fontSize:11, padding:'4px 10px', borderRadius:20, background:'#eaf3de', color:'#3b6d11', fontWeight:500 }}>🍽️ Repas pris en charge</span>:<span style={{ fontSize:11, padding:'4px 10px', borderRadius:20, background:'#f0f0f0', color:'#888', fontWeight:500 }}>🍽️ Repas non inclus</span>}
+                          {selectedEv.heureDepart&&<span style={{ fontSize:11, padding:'4px 10px', borderRadius:20, background:selectedEv.arriveeSurPlace?'#faeeda':'#f0f0f0', color:selectedEv.arriveeSurPlace?'#854f0b':'#555', fontWeight:500 }}>🕐 {selectedEv.arriveeSurPlace?'Arrivée sur place':'Départ bureau'} : {selectedEv.heureDepart}{selectedEv.arriveeSurPlace?' ⚠️':''}</span>}
+                        </div>
+                      )}
+                      {selectedEv.note&&<div style={{ background:'#fffdf7', border:'1px solid #f0d5a0', borderRadius:8, padding:'10px 12px', marginBottom:12, fontSize:13, color:'#555', fontStyle:'italic' }}>💬 {selectedEv.note}</div>}
+                      <div>
+                        {isMine?(
+                          <div style={{ background:'#eaf3de', color:'#3b6d11', fontSize:13, fontWeight:600, padding:'12px 16px', borderRadius:10, textAlign:'center' }}>✅ Tu es inscrit à cette mission</div>
+                        ):isEnAttente?(
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', background:'#fffdf7', border:'1px solid #f0d5a0', padding:'12px 16px', borderRadius:10 }}>
+                            <span style={{ fontSize:13, color:'#854f0b', fontWeight:500 }}>⏳ Demande en attente de validation</span>
+                            <button onClick={()=>{const i=mesInscriptions.find(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');if(i)seDesinscrire(i.id);}} style={{ fontSize:11, color:'#888', background:'none', border:'1px solid #ddd', borderRadius:6, padding:'4px 10px', cursor:'pointer' }}>Annuler</button>
+                          </div>
+                        ):(
+                          <button onClick={()=>sInscrire(selectedEv.id)}
+                            style={{ width:'100%', background:mt.color, color:'#fff', border:'none', borderRadius:10, padding:'14px', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                            ✋ M'inscrire à cette mission
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </div>
-                  {(() => {
-                    const mt=missionTypes[selectedEv.type]||Object.values(missionTypes)[0]||{label:selectedEv.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
-                    const isMine=!!mesEvsValides.find(e=>e.id===selectedEv.id);
-                    const isEnAttente=!!mesInscriptions.find(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');
-                    return <div style={{ fontSize:13, color:'#555', display:'flex', flexDirection:'column', gap:5 }}>
-                      <div>📅 {new Date(selectedEv.date + 'T12:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
-                      <div>🕐 {selectedEv.debut} – {selectedEv.fin} ({fmtH(dureeH(selectedEv.debut,selectedEv.fin))})</div>
-                      {selectedEv.lieu&&<div>📍 {selectedEv.lieu}</div>}
-                      <div><span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'2px 8px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span></div>
-                      {selectedEv.note&&<div style={{ fontStyle:'italic', color:'#888' }}>💬 {selectedEv.note}</div>}
-                      {isMine
-                        ? <div style={{ background:'#eaf3de', color:'#3b6d11', fontSize:12, padding:'6px 10px', borderRadius:8, marginTop:4 }}>✅ Tu es inscrit à cette mission</div>
-                        : isEnAttente
-                          ? <div style={{ background:'#fffdf7', color:'#854f0b', fontSize:12, padding:'6px 10px', borderRadius:8, marginTop:4 }}>⏳ Inscription en attente de validation</div>
-                          : selectedEv.ouvert
-                            ? <button onClick={()=>{sInscrire(selectedEv.id);setSelectedEv(null);}} style={{ background:'#a32d2d', color:'#fff', border:'none', borderRadius:8, padding:'8px 16px', fontSize:13, fontWeight:600, cursor:'pointer', marginTop:4 }}>M'inscrire</button>
-                            : <div style={{ background:'#f1efe8', color:'#888', fontSize:12, padding:'6px 10px', borderRadius:8, marginTop:4 }}>🔒 Inscriptions fermées</div>
-                      }
-                    </div>;
-                  })()}
-                </div>
-              )}
-            </div>
+                );
+              })()}
           );
         })()}
 
