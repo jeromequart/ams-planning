@@ -440,7 +440,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
               <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:500+salaries.length*90 }}>
                 <thead>
                   <tr style={{ background:'#fafaf8', borderBottom:'1px solid var(--border)' }}>
-                    <th style={{ ...s.th, textAlign:'left', paddingLeft:16, width:220, minWidth:220 }}>Événement</th>
+                    <th style={{ ...s.th, textAlign:'left', paddingLeft:16, width:220, minWidth:220, position:'sticky', left:0, zIndex:3, background:'#fafaf8' }}>Événement</th>
                     {salaries.map(sal => {
                       const h = heuresSalarie(sal.id);
                       const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
@@ -459,7 +459,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                     const mt = missionTypes[ev.type]||{};
                     return (
                       <tr key={ev.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                        <td style={{ padding:'10px 16px' }}>{ev.nom}</td>
+                        <td style={{ padding:'10px 16px', position:'sticky', left:0, zIndex:1, background:'#fff', borderRight:'1px solid var(--border)', fontWeight:500 }}>{ev.nom}</td>
                         {salaries.map(sal => {
                           const insc = inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===sal.id&&i.statut!=='retire');
                           return (
@@ -499,5 +499,5 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
 const styles = {
   toolbar: { display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 },
   navBtn: { width:30, height:30, borderRadius:8, border:'1px solid var(--border-med)', background:'#fff', cursor:'pointer', fontSize:16, color:'var(--text-2)', fontFamily:'var(--font)', display:'flex', alignItems:'center', justifyContent:'center' },
-  th: { padding:'10px 8px', fontSize:11, fontWeight:500, color:'var(--text-2)', textAlign:'center', position:'sticky', top:0, zIndex:2 },
+  th: { padding:'10px 8px', fontSize:11, fontWeight:500, color:'var(--text-2)', textAlign:'center', position:'sticky', top:0, zIndex:2, background:'#fafaf8' },
 };
