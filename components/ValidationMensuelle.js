@@ -119,7 +119,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
     { key:'attente', label:`⏳ Demandes en attente`, badge: totalAttente },
     { key:'evenement', label:'📅 Par événement' },
     { key:'salarie', label:'👤 Par salarié' },
-    { key:'tableau', label:'📊 Vue d\\'ensemble' },
+    { key:'tableau', label:"📊 Vue d'ensemble" },
   ];
 
   return (
