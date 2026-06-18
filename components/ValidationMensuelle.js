@@ -345,7 +345,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
               onChange={e=>setSearchSal(e.target.value)}
             />
             <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight: selectedSal ? 600 : 'none', overflowY: selectedSal ? 'auto' : 'visible' }}>
-              {salaries.filter(sal => `${sal.prenom} ${sal.nom}`.toLowerCase().includes(searchSal.toLowerCase())).map(sal => {
+              {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).filter(sal => `${sal.prenom} ${sal.nom}`.toLowerCase().includes(searchSal.toLowerCase())).map(sal => {
                 const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
                 const h = heuresSalarie(sal.id);
                 const isSel = selectedSalId === sal.id;
@@ -437,17 +437,18 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
             <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:'48px', textAlign:'center', color:'var(--text-3)' }}>Aucun événement ce mois.</div>
           ) : (
             <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:500+salaries.length*90 }}>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:500+salaries.length*100 }}>
                 <thead>
                   <tr style={{ background:'#fafaf8', borderBottom:'1px solid var(--border)' }}>
                     <th style={{ ...s.th, textAlign:'left', paddingLeft:16, width:220, minWidth:220, position:'sticky', left:0, zIndex:3, background:'#fafaf8' }}>Événement</th>
-                    {salaries.map(sal => {
+                    {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).map(sal => {
                       const h = heuresSalarie(sal.id);
                       const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
                       return (
-                        <th key={sal.id} style={{ ...s.th, width:90, minWidth:90 }}>
+                        <th key={sal.id} style={{ ...s.th, width:100, minWidth:100 }}>
                           <div style={{ width:26, height:26, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:500, margin:'0 auto 3px' }}>{initiales(sal.prenom,sal.nom)}</div>
-                          <div style={{ fontSize:10, color:'var(--text-2)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.prenom}</div>
+                          <div style={{ fontSize:10, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.nom}</div>
+                          <div style={{ fontSize:9, color:'var(--text-2)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.prenom}</div>
                           <div style={{ fontSize:11, fontWeight:500, fontFamily:'var(--font-mono)' }}>{fmtH(h)}</div>
                         </th>
                       );
@@ -460,7 +461,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                     return (
                       <tr key={ev.id} style={{ borderBottom:'1px solid var(--border)' }}>
                         <td style={{ padding:'10px 16px', position:'sticky', left:0, zIndex:1, background:'#fff', borderRight:'1px solid var(--border)', fontWeight:500 }}>{ev.nom}</td>
-                        {salaries.map(sal => {
+                        {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).map(sal => {
                           const insc = inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===sal.id&&i.statut!=='retire');
                           return (
                             <td key={sal.id} style={{ padding:'8px', textAlign:'center' }}>
