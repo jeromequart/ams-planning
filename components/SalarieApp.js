@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
 import * as db from '../lib/db';
 
@@ -31,6 +31,17 @@ export default function SalarieApp({ session, onLogout }) {
   const [weekStart, setWeekStart] = useState(() => { const d=new Date(); const diff=d.getDay()===0?-6:1-d.getDay(); d.setDate(d.getDate()+diff); d.setHours(0,0,0,0); return d; });
   const [currentMonth, setCurrentMonth] = useState(() => { const d=new Date(); d.setDate(1); return d; });
   const [selectedEv, setSelectedEv] = useState(null);
+  const detailRef = useRef(null);
+
+  function selectEvent(ev) {
+    setSelectedEv(prev => {
+      const newVal = prev?.id === ev.id ? null : ev;
+      if (newVal) {
+        setTimeout(() => { detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 100);
+      }
+      return newVal;
+    });
+  }
 
   const now = localNow();
 
@@ -262,7 +273,7 @@ export default function SalarieApp({ session, onLogout }) {
                             const colWidth = `${Math.floor(98/colCount)}%`;
                             const colLeft = `${overlap * Math.floor(98/colCount)}%`;
                             return (
-                              <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
+                              <div key={ev.id} onClick={()=>selectEvent(ev)}
                                 style={{ position:'absolute', left:colLeft, width:colWidth, top, height:h,
                                   background:'#fff', borderLeft:`4px solid ${mt.color}`,
                                   borderRadius:6, padding:'5px 8px', cursor:'pointer',
@@ -319,7 +330,7 @@ export default function SalarieApp({ session, onLogout }) {
                           const top=((toM(ev.debut)-GSTART)/GTOTAL)*(16*CELL);
                           const height=Math.max(((toM(ev.fin)-toM(ev.debut))/GTOTAL)*(16*CELL),20);
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
-                          return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
+                          return <div key={ev.id} onClick={()=>selectEvent(ev)}
                             style={{ position:'absolute', left: 2 + (evIdx % 3) * 8, right: 2, top: top + (evIdx % 3) * 2, height, background:'#fff', borderLeft:`3px solid ${mt.color}`, borderRadius:4, padding:'2px 5px', cursor:'pointer', overflow:'hidden', opacity:isMine?1:0.85, zIndex: 1 + evIdx, boxShadow:'0 1px 3px rgba(0,0,0,0.12)' }}>
                             <div style={{ fontSize:9, fontWeight:700, color:mt.color, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.nom||mt.label}</div>
                             {height>26&&<div style={{ fontSize:9, color:'#555' }}>{ev.debut}–{ev.fin}</div>}
@@ -353,7 +364,7 @@ export default function SalarieApp({ session, onLogout }) {
                         {dayEvs.slice(0,2).map(ev=>{
                           const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
                           const isMine=!!mesEvsValides.find(e=>e.id===ev.id);
-                          return <div key={ev.id} onClick={()=>setSelectedEv(selectedEv?.id===ev.id?null:ev)}
+                          return <div key={ev.id} onClick={()=>selectEvent(ev)}
                             style={{ background:'#fff', borderLeft:`3px solid ${mt.color}`, borderRadius:3, padding:'1px 3px', marginBottom:2, cursor:'pointer', opacity:isMine?1:0.75 }}>
                             <div style={{ fontSize:9, fontWeight:600, color:'#fff', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', fontWeight:700 }}>{ev.debut?.slice(0,5)} {ev.nom||mt.label}</div>
                           </div>;
@@ -371,7 +382,7 @@ export default function SalarieApp({ session, onLogout }) {
                 const isMine = !!mesEvsValides.find(e=>e.id===selectedEv.id);
                 const isEnAttente = !!mesInscriptions.find(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');
                 return (
-                  <div style={{ background:'#fff', borderRadius:14, border:`2px solid ${mt.color}33`, marginTop:12, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.1)' }}>
+                  <div ref={detailRef} style={{ background:'#fff', borderRadius:14, border:`2px solid ${mt.color}33`, marginTop:12, overflow:'hidden', boxShadow:'0 4px 20px rgba(0,0,0,0.1)', scrollMarginTop:80 }}>
                     <div style={{ background:mt.color, padding:'14px 16px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                       <div style={{ display:'flex', alignItems:'center', gap:10 }}>
                         <span style={{ fontSize:24 }}>{mt.icon}</span>
