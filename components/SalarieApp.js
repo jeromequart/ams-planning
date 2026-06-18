@@ -424,6 +424,7 @@ export default function SalarieApp({ session, onLogout }) {
                   </div>
                 );
               })()}
+            </div>
           );
         })()}
 
