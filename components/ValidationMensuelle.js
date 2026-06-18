@@ -460,7 +460,10 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                     const mt = missionTypes[ev.type]||{};
                     return (
                       <tr key={ev.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                        <td style={{ padding:'10px 16px', position:'sticky', left:0, zIndex:1, background:'#fff', borderRight:'1px solid var(--border)', fontWeight:500 }}>{ev.nom}</td>
+                        <td style={{ padding:'10px 16px', position:'sticky', left:0, zIndex:1, background:'#fff', borderRight:'1px solid var(--border)' }}>
+                          <div style={{ fontWeight:500 }}>{ev.nom}</div>
+                          {ev.ref && <div style={{ fontSize:10, color:'var(--text-3)', fontFamily:'var(--font-mono)', marginTop:1 }}>{ev.ref}</div>}
+                        </td>
                         {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).map(sal => {
                           const insc = inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===sal.id&&i.statut!=='retire');
                           return (
