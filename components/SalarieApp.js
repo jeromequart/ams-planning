@@ -228,6 +228,7 @@ export default function SalarieApp({ session, onLogout }) {
                 const dayEvs = evenements.filter(e => e.date === ds).sort((a,b)=>a.debut.localeCompare(b.debut));
                 const isMine2 = (ev) => !!mesEvsValides.find(e=>e.id===ev.id);
                 return (
+                  <>
                   <div style={{ background:'#fff', borderRadius:12, border:'1px solid #eee', overflow:'hidden' }}>
                     {/* Header jour */}
                     <div style={{ padding:'12px 16px', borderBottom:'1px solid #eee', display:'flex', alignItems:'center', gap:12 }}>
@@ -295,8 +296,45 @@ export default function SalarieApp({ session, onLogout }) {
                       </div>
                     )}
                   </div>
-                );
-              })()}
+
+                  {/* Liste du jour sous le calendrier */}
+                  {dayEvs.length > 0 && (
+                    <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:8 }}>
+                      <div style={{ fontSize:11, fontWeight:600, color:'#aaa', textTransform:'uppercase', letterSpacing:'0.05em', padding:'0 2px' }}>
+                        Programme du jour
+                      </div>
+                      {dayEvs.map(ev => {
+                        const mt = missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
+                        const isMine = isMine2(ev);
+                        const isEnAttente = !!mesInscriptions.find(i=>i.evenementId===ev.id&&i.statut==='en_attente');
+                        return (
+                          <div key={ev.id} onClick={()=>selectEvent(ev)}
+                            style={{ display:'flex', alignItems:'stretch', background:'#fff', borderRadius:10, border:`1px solid ${selectedEv?.id===ev.id?mt.color:'#eee'}`, cursor:'pointer', overflow:'hidden', boxShadow: selectedEv?.id===ev.id ? `0 0 0 2px ${mt.color}33` : '0 1px 3px rgba(0,0,0,0.05)' }}>
+                            <div style={{ width:64, flexShrink:0, background:'#fafaf8', borderRight:`3px solid ${mt.color}`, padding:'10px 6px', textAlign:'center', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+                              <div style={{ fontSize:13, fontWeight:700 }}>{ev.debut}</div>
+                              <div style={{ fontSize:10, color:'#bbb' }}>↓</div>
+                              <div style={{ fontSize:12, color:'#888' }}>{ev.fin}</div>
+                            </div>
+                            <div style={{ flex:1, padding:'10px 12px', minWidth:0 }}>
+                              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:6 }}>
+                                <div style={{ fontSize:13, fontWeight:700, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.nom||mt.label}</div>
+                                {isMine && <span style={{ fontSize:9, background:mt.color, color:'#fff', borderRadius:10, padding:'2px 7px', flexShrink:0, fontWeight:600 }}>✓ inscrit</span>}
+                                {!isMine && isEnAttente && <span style={{ fontSize:9, background:'#FAEEDA', color:'#854F0B', borderRadius:10, padding:'2px 7px', flexShrink:0, fontWeight:600 }}>⏳</span>}
+                              </div>
+                              <div style={{ display:'flex', alignItems:'center', gap:6, flexWrap:'wrap', marginTop:5 }}>
+                                <span style={{ background:mt.bg, color:mt.color, fontSize:10, padding:'2px 7px', borderRadius:20, fontWeight:600 }}>{mt.icon} {mt.label}</span>
+                                {ev.lieu && <span style={{ fontSize:11, color:'#888' }}>📍 {ev.lieu}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+
 
               {/* Semaine */}
               {calView==='semaine' && (
