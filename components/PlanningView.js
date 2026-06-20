@@ -164,7 +164,8 @@ const mst = {
 };
 
 export default function PlanningView({ salaries, evenements, addEvenement, updateEvenement, removeEvenement, inscriptions, addInscription, updateInscription, removeInscription, missionTypes, vehicules=[], evenementVehicules={}, loadEvenementVehicules, saveEvenementVehicules, envoyerConvocations }) {
-  const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois'
+  const [viewMode, setViewMode] = useState('semaine'); // 'jour' | 'semaine' | 'mois'
+  const [currentDay, setCurrentDay] = useState(() => new Date());
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d; });
   const [weekStart, setWeekStart] = useState(getMonday(new Date()));
   const [selected, setSelected] = useState(null);
@@ -233,14 +234,27 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
       {/* Toolbar */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <button style={st.navBtn} onClick={() => setWeekStart(d => addDays(d, -7))}>‹</button>
-          <button style={st.navBtn} onClick={() => setWeekStart(d => addDays(d, 7))}>›</button>
-          <button style={st.todayBtn} onClick={() => setWeekStart(getMonday(new Date()))}>Aujourd'hui</button>
-          <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>{weekLabel()}</span>
+          {viewMode === 'jour' ? (
+            <>
+              <button style={st.navBtn} onClick={() => setCurrentDay(d => addDays(d, -1))}>‹</button>
+              <button style={st.navBtn} onClick={() => setCurrentDay(d => addDays(d, 1))}>›</button>
+              <button style={st.todayBtn} onClick={() => setCurrentDay(new Date())}>Aujourd'hui</button>
+              <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>
+                {['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][currentDay.getDay()]} {currentDay.getDate()} {MONTHS[currentDay.getMonth()]} {currentDay.getFullYear()}
+              </span>
+            </>
+          ) : (
+            <>
+              <button style={st.navBtn} onClick={() => setWeekStart(d => addDays(d, -7))}>‹</button>
+              <button style={st.navBtn} onClick={() => setWeekStart(d => addDays(d, 7))}>›</button>
+              <button style={st.todayBtn} onClick={() => setWeekStart(getMonday(new Date()))}>Aujourd'hui</button>
+              <span style={{ fontSize: 14, fontWeight: 600, marginLeft: 8 }}>{weekLabel()}</span>
+            </>
+          )}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <div style={{ display:'flex', background:'#f8f6f2', borderRadius:8, padding:3, gap:3 }}>
-            {[{key:'semaine',label:'Semaine'},{key:'mois',label:'Mois'}].map(({key,label})=>(
+            {[{key:'jour',label:'Jour'},{key:'semaine',label:'Semaine'},{key:'mois',label:'Mois'}].map(({key,label})=>(
               <button key={key} onClick={()=>setViewMode(key)} style={{ padding:'5px 12px', borderRadius:6, border:'none', fontSize:12, fontWeight:viewMode===key?500:400, background:viewMode===key?'#fff':'transparent', color:viewMode===key?'var(--text)':'var(--text-2)', cursor:'pointer', boxShadow:viewMode===key?'0 1px 3px rgba(0,0,0,0.08)':'none', fontFamily:'var(--font)' }}>{label}</button>
             ))}
           </div>
@@ -266,6 +280,109 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           currentMonth={currentMonth} setCurrentMonth={setCurrentMonth}
         />
       )}
+
+      {/* Vue jour */}
+      {viewMode === 'jour' && (() => {
+        const dayStr = localDateStr(currentDay);
+        const isToday = dayStr === todayStr;
+        const dayEvs = evenements.filter(e => e.date === dayStr).sort((a,b)=>a.debut.localeCompare(b.debut));
+        return (
+          <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 300px' : '1fr', gap: 16 }}>
+            <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
+              {/* Header jour */}
+              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', background: isToday ? '#fff5f5' : 'transparent', display:'flex', alignItems:'center', gap:14 }}>
+                <div style={{ width:44, height:44, borderRadius:'50%', background: isToday ? '#a32d2d' : '#f8f6f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:700, color: isToday ? '#fff' : 'var(--text)' }}>
+                  {currentDay.getDate()}
+                </div>
+                <div>
+                  <div style={{ fontSize:15, fontWeight:600 }}>{['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][currentDay.getDay()]}</div>
+                  <div style={{ fontSize:12, color:'var(--text-2)' }}>{dayEvs.length} événement{dayEvs.length > 1 ? 's' : ''}</div>
+                </div>
+              </div>
+
+              {/* Grille horaire en pleine largeur */}
+              <div style={{ position: 'relative', overflowY: 'auto', maxHeight: 620 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr' }}>
+                  <div style={{ borderRight: '1px solid var(--border)' }}>
+                    {HOURS.map(h => (
+                      <div key={h} style={{ height: CELL_H, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 6, paddingTop: 3 }}>
+                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{h}h</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ position: 'relative', cursor: 'pointer' }}
+                    onClick={e => { if (e.target === e.currentTarget) clickCell(dayStr, e.nativeEvent.offsetY); }}>
+                    {HOURS.map(h => (
+                      <div key={h} style={{ height: CELL_H, borderBottom: '1px solid #f0ede6' }}
+                        onClick={() => clickCell(dayStr, (h - 6) * CELL_H)} />
+                    ))}
+                    {dayEvs.map((ev, evIdx) => {
+                      const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label: ev.type, icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
+                      const evInscrits = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'valide');
+                      const top = ((toMin(ev.debut) - GRID_START) / GRID_TOTAL) * (HOURS.length * CELL_H);
+                      const height = Math.max(((toMin(ev.fin) - toMin(ev.debut)) / GRID_TOTAL) * (HOURS.length * CELL_H), 36);
+                      const isSelected = selected === ev.id;
+                      const overlapIdx = dayEvs.slice(0, evIdx).filter(prev => {
+                        const prevTop = ((toMin(prev.debut)-GRID_START)/GRID_TOTAL)*(HOURS.length*CELL_H);
+                        const prevH = Math.max(((toMin(prev.fin)-toMin(prev.debut))/GRID_TOTAL)*(HOURS.length*CELL_H),36);
+                        return top < prevTop + prevH && top + height > prevTop;
+                      }).length;
+                      const colW = overlapIdx > 0 ? 60 : 96;
+                      return (
+                        <div key={ev.id} onClick={e => { e.stopPropagation(); setSelected(isSelected ? null : ev.id); }}
+                          style={{ position: 'absolute', left: `${2 + overlapIdx * 22}%`, width: `${colW}%`, top, height,
+                            background: '#fff', borderLeft: `4px solid ${mt.color}`, borderRadius: 8, padding: '8px 12px',
+                            cursor: 'pointer', overflow: 'hidden',
+                            boxShadow: isSelected ? `0 0 0 2px ${mt.color}` : '0 2px 6px rgba(0,0,0,0.1)',
+                            zIndex: 1 + overlapIdx }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: mt.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {ev.nom || mt.label}
+                          </div>
+                          {height > 44 && (
+                            <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
+                              {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} 👤{ev.lieu ? ` · 📍 ${ev.lieu}` : ''}
+                            </div>
+                          )}
+                          {!ev.ouvert && <div style={{ position: 'absolute', top: 6, right: 8, fontSize: 11 }}>🔒</div>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {dayEvs.length === 0 && (
+                <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-3)', fontSize:13, position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none' }}>
+                  Aucun événement ce jour — cliquez sur la grille pour en créer un
+                </div>
+              )}
+            </div>
+
+            {/* Panneau détail (réutilisé identique à la vue semaine) */}
+            {selEv && (
+              <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', padding: 16, alignSelf: 'start', position: 'sticky', top: 80 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700 }}>{selEv.nom || '(sans nom)'}</div>
+                    {selEv.ref && <div style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'var(--font-mono)', marginTop: 2 }}>{selEv.ref}</div>}
+                  </div>
+                  <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: 'var(--text-3)' }}>✕</button>
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 14 }}>
+                  <div>📅 {new Date(selEv.date + 'T12:00:00').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                  <div>🕐 {selEv.debut} – {selEv.fin}</div>
+                  {selEv.lieu && <div>📍 {selEv.lieu}</div>}
+                  <div>👥 {inscritsValides.length} / {selEv.effectif}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <button onClick={() => { setEditEv(selEv); setShowCreate(true); }} style={st.btnSec}>✏️ Modifier l'événement</button>
+                  <button onClick={() => deleteEvent(selEv.id)} style={{ ...st.btnSec, color: '#a32d2d', borderColor: '#f5c6c6' }}>🗑 Supprimer</button>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Vue semaine */}
       {viewMode === 'semaine' && (
