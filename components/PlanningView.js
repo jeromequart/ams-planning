@@ -287,78 +287,82 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
         const isToday = dayStr === todayStr;
         const dayEvs = evenements.filter(e => e.date === dayStr).sort((a,b)=>a.debut.localeCompare(b.debut));
         return (
-          <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 300px' : '1fr', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 320px' : '1fr', gap: 16 }}>
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
               {/* Header jour */}
-              <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', background: isToday ? '#fff5f5' : 'transparent', display:'flex', alignItems:'center', gap:14 }}>
-                <div style={{ width:44, height:44, borderRadius:'50%', background: isToday ? '#a32d2d' : '#f8f6f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, fontWeight:700, color: isToday ? '#fff' : 'var(--text)' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', background: isToday ? '#fff5f5' : 'transparent', display:'flex', alignItems:'center', gap:14 }}>
+                <div style={{ width:48, height:48, borderRadius:'50%', background: isToday ? '#a32d2d' : '#f8f6f2', display:'flex', alignItems:'center', justifyContent:'center', fontSize:21, fontWeight:700, color: isToday ? '#fff' : 'var(--text)', flexShrink:0 }}>
                   {currentDay.getDate()}
                 </div>
                 <div>
-                  <div style={{ fontSize:15, fontWeight:600 }}>{['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][currentDay.getDay()]}</div>
+                  <div style={{ fontSize:16, fontWeight:600 }}>{['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'][currentDay.getDay()]}</div>
                   <div style={{ fontSize:12, color:'var(--text-2)' }}>{dayEvs.length} événement{dayEvs.length > 1 ? 's' : ''}</div>
                 </div>
               </div>
 
-              {/* Grille horaire en pleine largeur */}
-              <div style={{ position: 'relative', overflowY: 'auto', maxHeight: 620 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '50px 1fr' }}>
-                  <div style={{ borderRight: '1px solid var(--border)' }}>
-                    {HOURS.map(h => (
-                      <div key={h} style={{ height: CELL_H, borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'flex-end', paddingRight: 6, paddingTop: 3 }}>
-                        <span style={{ fontSize: 10, color: 'var(--text-3)' }}>{h}h</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ position: 'relative', cursor: 'pointer' }}
-                    onClick={e => { if (e.target === e.currentTarget) clickCell(dayStr, e.nativeEvent.offsetY); }}>
-                    {HOURS.map(h => (
-                      <div key={h} style={{ height: CELL_H, borderBottom: '1px solid #f0ede6' }}
-                        onClick={() => clickCell(dayStr, (h - 6) * CELL_H)} />
-                    ))}
-                    {dayEvs.map((ev, evIdx) => {
-                      const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label: ev.type, icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
-                      const evInscrits = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'valide');
-                      const top = ((toMin(ev.debut) - GRID_START) / GRID_TOTAL) * (HOURS.length * CELL_H);
-                      const height = Math.max(((toMin(ev.fin) - toMin(ev.debut)) / GRID_TOTAL) * (HOURS.length * CELL_H), 36);
-                      const isSelected = selected === ev.id;
-                      const overlapIdx = dayEvs.slice(0, evIdx).filter(prev => {
-                        const prevTop = ((toMin(prev.debut)-GRID_START)/GRID_TOTAL)*(HOURS.length*CELL_H);
-                        const prevH = Math.max(((toMin(prev.fin)-toMin(prev.debut))/GRID_TOTAL)*(HOURS.length*CELL_H),36);
-                        return top < prevTop + prevH && top + height > prevTop;
-                      }).length;
-                      const colW = overlapIdx > 0 ? 60 : 96;
-                      return (
-                        <div key={ev.id} onClick={e => { e.stopPropagation(); setSelected(isSelected ? null : ev.id); }}
-                          style={{ position: 'absolute', left: `${2 + overlapIdx * 22}%`, width: `${colW}%`, top, height,
-                            background: '#fff', borderLeft: `4px solid ${mt.color}`, borderRadius: 8, padding: '8px 12px',
-                            cursor: 'pointer', overflow: 'hidden',
-                            boxShadow: isSelected ? `0 0 0 2px ${mt.color}` : '0 2px 6px rgba(0,0,0,0.1)',
-                            zIndex: 1 + overlapIdx }}>
-                          <div style={{ fontSize: 13, fontWeight: 700, color: mt.color, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                            {ev.nom || mt.label}
-                          </div>
-                          {height > 44 && (
-                            <div style={{ fontSize: 11, color: '#666', marginTop: 2 }}>
-                              {ev.debut}–{ev.fin} · {evInscrits.length}/{ev.effectif} 👤{ev.lieu ? ` · 📍 ${ev.lieu}` : ''}
-                            </div>
-                          )}
-                          {!ev.ouvert && <div style={{ position: 'absolute', top: 6, right: 8, fontSize: 11 }}>🔒</div>}
-                        </div>
-                      );
-                    })}
+              {/* Liste verticale des événements */}
+              {dayEvs.length === 0 ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', color:'var(--text-3)', fontSize:14 }}>
+                  <div style={{ fontSize:32, marginBottom:10 }}>📅</div>
+                  Aucun événement ce jour
+                  <div style={{ marginTop:14 }}>
+                    <button onClick={() => { setCreateDate(dayStr); setEditEv(null); setShowCreate(true); }} style={st.createBtn}>+ Créer un événement</button>
                   </div>
                 </div>
-              </div>
-
-              {dayEvs.length === 0 && (
-                <div style={{ textAlign:'center', padding:'40px 20px', color:'var(--text-3)', fontSize:13, position:'absolute', top:'50%', left:'50%', transform:'translate(-50%,-50%)', pointerEvents:'none' }}>
-                  Aucun événement ce jour — cliquez sur la grille pour en créer un
+              ) : (
+                <div style={{ padding: '12px 16px', display:'flex', flexDirection:'column', gap:10, maxHeight: 640, overflowY:'auto' }}>
+                  {dayEvs.map(ev => {
+                    const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label: ev.type, icon: '📌', bg: '#f1efe8', color: '#5f5e5a' };
+                    const evInscrits = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'valide');
+                    const evAttente = inscriptions.filter(i => i.evenementId === ev.id && i.statut === 'en_attente');
+                    const isSelected = selected === ev.id;
+                    const dur = (() => {
+                      const dh = toMin(ev.fin) - toMin(ev.debut);
+                      return fmtH(dh / 60);
+                    })();
+                    return (
+                      <div key={ev.id} onClick={() => setSelected(isSelected ? null : ev.id)}
+                        style={{
+                          display:'flex', alignItems:'stretch', gap:0,
+                          background:'#fff', borderRadius:10, cursor:'pointer', overflow:'hidden',
+                          border: `1px solid ${isSelected ? mt.color : 'var(--border)'}`,
+                          boxShadow: isSelected ? `0 0 0 2px ${mt.color}33` : '0 1px 3px rgba(0,0,0,0.05)',
+                        }}>
+                        {/* Heure à gauche */}
+                        <div style={{ width:78, flexShrink:0, background:'#fafaf8', borderRight:`3px solid ${mt.color}`, padding:'12px 10px', textAlign:'center', display:'flex', flexDirection:'column', justifyContent:'center' }}>
+                          <div style={{ fontSize:15, fontWeight:700, color:'var(--text)' }}>{ev.debut}</div>
+                          <div style={{ fontSize:11, color:'var(--text-3)', margin:'2px 0' }}>↓</div>
+                          <div style={{ fontSize:13, fontWeight:500, color:'var(--text-2)' }}>{ev.fin}</div>
+                        </div>
+                        {/* Contenu */}
+                        <div style={{ flex:1, padding:'12px 14px', minWidth:0 }}>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:'var(--text)', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              {ev.nom || mt.label}
+                            </div>
+                            {!ev.ouvert && <span style={{ fontSize:13, flexShrink:0 }}>🔒</span>}
+                          </div>
+                          {ev.ref && <div style={{ fontSize:10, color:'var(--text-3)', fontFamily:'var(--font-mono)', marginTop:1 }}>{ev.ref}</div>}
+                          <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginTop:6 }}>
+                            <span style={{ background:mt.bg, color:mt.color, fontSize:10, padding:'2px 8px', borderRadius:20, fontWeight:600 }}>{mt.icon} {mt.label}</span>
+                            <span style={{ fontSize:11, color:'var(--text-2)' }}>⏱ {dur}</span>
+                            <span style={{ fontSize:11, fontWeight:600, color: evInscrits.length >= ev.effectif ? '#3B6D11' : '#854F0B' }}>👤 {evInscrits.length}/{ev.effectif}</span>
+                            {evAttente.length > 0 && <span style={{ background:'#FAEEDA', color:'#854F0B', fontSize:10, padding:'2px 7px', borderRadius:20, fontWeight:600 }}>⏳ {evAttente.length}</span>}
+                            {ev.lieu && <span style={{ fontSize:11, color:'var(--text-2)' }}>📍 {ev.lieu}</span>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <button onClick={() => { setCreateDate(dayStr); setEditEv(null); setShowCreate(true); }}
+                    style={{ ...st.btnSec, textAlign:'center', borderStyle:'dashed', padding:'10px' }}>
+                    + Ajouter un événement ce jour
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Panneau détail (réutilisé identique à la vue semaine) */}
+            {/* Panneau détail */}
             {selEv && (
               <div style={{ background: '#fff', borderRadius: 14, border: '1px solid var(--border)', padding: 16, alignSelf: 'start', position: 'sticky', top: 80 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
@@ -374,7 +378,38 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
                   {selEv.lieu && <div>📍 {selEv.lieu}</div>}
                   <div>👥 {inscritsValides.length} / {selEv.effectif}</div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {/* Équipe inscrite */}
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Équipe</div>
+                  {inscritsValides.length === 0 ? (
+                    <div style={{ fontSize: 12, color: 'var(--text-3)', fontStyle: 'italic' }}>Aucun salarié inscrit</div>
+                  ) : (
+                    inscritsValides.map(insc => {
+                      const sal = salaries.find(s => s.id === insc.salarieId);
+                      const c = sal ? AVATAR_COLORS[sal.colorIdx % AVATAR_COLORS.length] : AVATAR_COLORS[0];
+                      return sal ? (
+                        <div key={insc.id} style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                          <div style={{ width: 26, height: 26, borderRadius: '50%', background: c.bg, color: c.txt, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 600, flexShrink: 0 }}>
+                            {(sal.prenom[0] + sal.nom[0]).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: 12, flex: 1 }}>{sal.prenom} {sal.nom}</span>
+                          <button onClick={() => retirerSalarie(insc.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-3)', fontSize: 13 }}>✕</button>
+                        </div>
+                      ) : null;
+                    })
+                  )}
+                  {inscritsValides.length < selEv.effectif && (
+                    <select
+                      style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--border-med)', borderRadius: 8, fontSize: 12, fontFamily: 'var(--font)', background: '#fff', marginTop: 8 }}
+                      value=""
+                      onChange={e => { if (e.target.value) inscrireSalarie(selEv.id, e.target.value); e.target.value = ''; }}
+                    >
+                      <option value="">+ Inscrire un salarié…</option>
+                      {salaries.filter(s => !inscritsValides.find(i => i.salarieId === s.id)).map(s => <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
+                    </select>
+                  )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, borderTop:'1px solid var(--border)', paddingTop:12 }}>
                   <button onClick={() => { setEditEv(selEv); setShowCreate(true); }} style={st.btnSec}>✏️ Modifier l'événement</button>
                   <button onClick={() => deleteEvent(selEv.id)} style={{ ...st.btnSec, color: '#a32d2d', borderColor: '#f5c6c6' }}>🗑 Supprimer</button>
                 </div>
@@ -383,6 +418,7 @@ export default function PlanningView({ salaries, evenements, addEvenement, updat
           </div>
         );
       })()}
+
 
       {/* Vue semaine */}
       {viewMode === 'semaine' && (
