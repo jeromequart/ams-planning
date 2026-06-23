@@ -115,19 +115,19 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   }).length, [inscActives, evenements, year, month]);
 
   const selectedEv = evenements.find(e=>e.id===selectedEvId);
-  const selectedSal = salaries.find(s=>s.id===selectedSalId);
+  const selectedSal = salaries.find(sal=>sal.id===selectedSalId);
 
   // Données de l'événement sélectionné
   const evInscrits = useMemo(() => selectedEvId
     ? inscActives.filter(i=>i.evenementId===selectedEvId&&i.statut==='valide')
-      .map(i=>({...i, sal:salaries.find(s=>s.id===i.salarieId)}))
+      .map(i=>({...i, sal:salaries.find(sal=>sal.id===i.salarieId)}))
       .filter(i=>i.sal)
       .sort((a,b)=>(missionsPar[b.sal.id]||0)-(missionsPar[a.sal.id]||0))
     : [], [selectedEvId, inscActives, salaries, missionsPar]);
 
   const evAttentes = useMemo(() => selectedEvId
     ? inscriptions.filter(i=>i.evenementId===selectedEvId&&i.statut==='en_attente')
-      .map(i=>({...i, sal:salaries.find(s=>s.id===i.salarieId)}))
+      .map(i=>({...i, sal:salaries.find(sal=>sal.id===i.salarieId)}))
       .filter(i=>i.sal)
       .sort((a,b)=>(missionsPar[a.sal.id]||0)-(missionsPar[b.sal.id]||0))
     : [], [selectedEvId, inscriptions, salaries, missionsPar]);
@@ -181,12 +181,11 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
     for(const i of attentes) await updateInscription(i.id,'valide');
   }
 
-  const s = styles;
   const evFiltres = evMois.filter(ev=>(ev.nom||'').toLowerCase().includes(searchEv.toLowerCase())||(ev.ref||'').toLowerCase().includes(searchEv.toLowerCase()));
 
   // Onglet par salarié
   const salFiltres = [...salaries]
-    .filter(s=>`${s.prenom} ${s.nom}`.toLowerCase().includes(searchSal.toLowerCase()))
+    .filter(sal=>`${sal.prenom} ${sal.nom}`.toLowerCase().includes(searchSal.toLowerCase()))
     .sort((a,b)=>a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom));
 
   const salMois = selectedSal ? evMois.filter(ev=>inscActives.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='valide')) : [];
@@ -204,8 +203,8 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
       {/* Toolbar mois */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button style={s.navBtn} onClick={()=>{ setCurrent(new Date(year,month-1,1)); setSelectedEvId(null); }}>‹</button>
-          <button style={s.navBtn} onClick={()=>{ setCurrent(new Date(year,month+1,1)); setSelectedEvId(null); }}>›</button>
+          <button style={styles.navBtn} onClick={()=>{ setCurrent(new Date(year,month-1,1)); setSelectedEvId(null); }}>‹</button>
+          <button style={styles.navBtn} onClick={()=>{ setCurrent(new Date(year,month+1,1)); setSelectedEvId(null); }}>›</button>
           <span style={{ fontSize:16, fontWeight:600 }}>{MONTHS[month]} {year}</span>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
@@ -476,7 +475,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
             const d=new Date(ev.date+'T12:00:00');
             return d.getFullYear()===year&&d.getMonth()===month&&i.statut==='en_attente';
           })
-          .map(i=>({...i, ev:evenements.find(e=>e.id===i.evenementId), sal:salaries.find(s=>s.id===i.salarieId)}))
+          .map(i=>({...i, ev:evenements.find(e=>e.id===i.evenementId), sal:salaries.find(sal=>sal.id===i.salarieId)}))
           .filter(i=>i.ev&&i.sal)
           .sort((a,b)=>a.ev.date.localeCompare(b.ev.date)||(missionsPar[a.sal.id]||0)-(missionsPar[b.sal.id]||0));
         return (
