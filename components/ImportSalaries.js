@@ -37,7 +37,7 @@ export default function ImportSalaries({ onClose }) {
     setStep('done');
   }
 
-  const s = styles;
+  const st = styles;
 
   return (
     <Modal title="Création des accès salariés" onClose={onClose} width={500}>
@@ -63,8 +63,8 @@ export default function ImportSalaries({ onClose }) {
           </div>
 
           <div style={{ display:'flex', gap:10, justifyContent:'flex-end' }}>
-            <button style={s.btnSec} onClick={onClose}>Annuler</button>
-            <button style={s.btnPri} onClick={startImport}>🚀 Créer les {avecEmail.length} comptes</button>
+            <button style={st.btnSec} onClick={onClose}>Annuler</button>
+            <button style={st.btnPri} onClick={startImport}>🚀 Créer les {avecEmail.length} comptes</button>
           </div>
         </div>
       )}
@@ -102,7 +102,7 @@ export default function ImportSalaries({ onClose }) {
               {results.erreurs.map((e,i) => <div key={i} style={{ fontSize:11, color:'#A32D2D', marginBottom:2 }}>{e}</div>)}
             </div>
           )}
-          <button style={{ ...s.btnPri, width:'100%' }} onClick={onClose}>Fermer</button>
+          <button style={{ ...st.btnPri, width:'100%' }} onClick={onClose}>Fermer</button>
         </div>
       )}
     </Modal>
