@@ -9,7 +9,7 @@ export default function ImportSalaries({ onClose }) {
   const [results, setResults] = useState(null);
   const BATCH = 10;
 
-  const avecEmail = SALARIES_DATA.filter(s => s.email);
+  const avecEmail = SALARIES_DATA.filter(sal => sal.email);
 
   async function startImport() {
     setStep('importing');
