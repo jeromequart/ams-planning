@@ -1,291 +1,553 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import HistoriqueModal from './HistoriqueModal';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-const DAYS = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DAYS_SHORT = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
 
-function getAge(dateNaissance) {
-  if (!dateNaissance) return null;
-  const today = new Date(); const birth = new Date(dateNaissance);
-  let age = today.getFullYear() - birth.getFullYear();
-  const m = today.getMonth() - birth.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
-  return age;
+function getAge(dn) {
+  if (!dn) return null;
+  const t = new Date(), b = new Date(dn);
+  let a = t.getFullYear() - b.getFullYear();
+  if (t.getMonth() - b.getMonth() < 0 || (t.getMonth() === b.getMonth() && t.getDate() < b.getDate())) a--;
+  return a;
 }
-function getDiplomeBadge(sal) {
-  const badges = [];
-  if (sal.chefEquipe) badges.push({ label:'Chef éq.', color:'#534AB7', bg:'#EEEDFE' });
-  if (sal.pse2) badges.push({ label:'PSE 2', color:'#185FA5', bg:'#E6F1FB' });
-  else if (sal.pse1) badges.push({ label:'PSE 1', color:'#185FA5', bg:'#E6F1FB' });
-  if (sal.bnssa) badges.push({ label:'BNSSA', color:'#0F6E56', bg:'#E1F5EE' });
-  return badges;
+function getDiplomes(sal) {
+  const d = [];
+  if (sal.chefEquipe) d.push({ label:'Chef éq.', color:'#534AB7', bg:'#EEEDFE' });
+  if (sal.pse2) d.push({ label:'PSE 2', color:'#185FA5', bg:'#E6F1FB' });
+  else if (sal.pse1) d.push({ label:'PSE 1', color:'#185FA5', bg:'#E6F1FB' });
+  if (sal.bnssa) d.push({ label:'BNSSA', color:'#0F6E56', bg:'#E1F5EE' });
+  return d;
 }
-function dureeH(d,f){const[dh,dm]=d.split(':').map(Number);const[fh,fm]=f.split(':').map(Number);return(fh*60+fm-(dh*60+dm))/60;}
-function fmtH(h){if(h<=0)return'0h';const hh=Math.floor(h);const mm=Math.round((h-hh)*60);return mm?`${hh}h${String(mm).padStart(2,'0')}`:`${hh}h`;}
-function initiales(p,n){return((p?.[0]||'')+(n?.[0]||'')).toUpperCase();}
-function localDateStr(d){return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;}
-function fmtDate(ds){const d=new Date(ds+'T12:00:00');return `${DAYS[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}.`;}
+function dureeH(d,f) { const[dh,dm]=d.split(':').map(Number);const[fh,fm]=f.split(':').map(Number);return(fh*60+fm-(dh*60+dm))/60; }
+function fmtH(h) { if(h<=0)return'0h';const hh=Math.floor(h);const mm=Math.round((h-hh)*60);return mm?`${hh}h${String(mm).padStart(2,'0')}`:`${hh}h`; }
+function ini(p,n) { return((p?.[0]||'')+(n?.[0]||'')).toUpperCase(); }
+function fmtDate(ds) { const d=new Date(ds+'T12:00:00');return`${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}.`; }
+function localDateStr(d) { return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 const AVATAR_COLORS=[
   {bg:'#FCEBEB',txt:'#A32D2D'},{bg:'#E6F1FB',txt:'#185FA5'},{bg:'#EAF3DE',txt:'#3B6D11'},
   {bg:'#FAEEDA',txt:'#854F0B'},{bg:'#EEEDFE',txt:'#534AB7'},{bg:'#E1F5EE',txt:'#0F6E56'},{bg:'#FBEAF0',txt:'#993556'},
 ];
 
+function chargeColor(n) {
+  if (n === 0) return { bg:'#f8f6f2', txt:'#aaa' };
+  if (n <= 2) return { bg:'#EAF3DE', txt:'#3B6D11' };
+  if (n <= 5) return { bg:'#FAEEDA', txt:'#854F0B' };
+  return { bg:'#FCEBEB', txt:'#A32D2D' };
+}
+
 export default function ValidationMensuelle({ salaries, evenements, inscriptions, addInscription, updateInscription, removeInscription, retireInscription, reactiverInscription, missionTypes }) {
   const [current, setCurrent] = useState(() => { const d=new Date(); d.setDate(1); return d; });
-  const [subTab, setSubTab] = useState('attente'); // 'attente' | 'evenement' | 'salarie' | 'tableau'
+  const [selectedEvId, setSelectedEvId] = useState(null);
   const [saving, setSaving] = useState({});
   const [historique, setHistorique] = useState(null);
-  const [selectedEvId, setSelectedEvId] = useState(null);
-  const [selectedSalId, setSelectedSalId] = useState(null);
   const [searchEv, setSearchEv] = useState('');
+  const [subTab, setSubTab] = useState('planning'); // 'planning' | 'attente' | 'salarie'
   const [searchSal, setSearchSal] = useState('');
-  const [showRetires, setShowRetires] = useState(false);
+  const [selectedSalId, setSelectedSalId] = useState(null);
 
   const year = current.getFullYear();
   const month = current.getMonth();
   const now = localDateStr(new Date());
 
-  const evMois = evenements
-    .filter(e => { const d=new Date(e.date+'T12:00:00'); return d.getFullYear()===year && d.getMonth()===month; })
-    .sort((a,b) => a.date.localeCompare(b.date));
+  // Événements du mois triés par date
+  const evMois = useMemo(() => evenements
+    .filter(e => { const d=new Date(e.date+'T12:00:00'); return d.getFullYear()===year&&d.getMonth()===month; })
+    .sort((a,b)=>a.date.localeCompare(b.date)), [evenements, year, month]);
 
-  const inscActives = inscriptions.filter(i => i.statut !== 'retire');
+  // Inscriptions actives (hors retirées)
+  const inscActives = useMemo(() => inscriptions.filter(i=>i.statut!=='retire'), [inscriptions]);
 
-  // Toutes les demandes en attente, tous événements confondus (mois en cours seulement par défaut)
-  const toutesAttentes = inscActives
-    .filter(i => i.statut === 'en_attente')
-    .map(i => ({ ...i, evenement: evenements.find(e => e.id === i.evenementId), salarie: salaries.find(s => s.id === i.salarieId) }))
-    .filter(i => i.evenement && i.salarie)
-    .sort((a,b) => a.evenement.date.localeCompare(b.evenement.date));
+  // Nb missions validées par salarié sur le mois
+  const missionsPar = useMemo(() => {
+    const map = {};
+    salaries.forEach(s => { map[s.id] = 0; });
+    evMois.forEach(ev => {
+      inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').forEach(i => {
+        if (map[i.salarieId] !== undefined) map[i.salarieId]++;
+      });
+    });
+    return map;
+  }, [inscActives, evMois, salaries]);
 
-  const totalValides = inscActives.filter(i => {
-    const ev = evenements.find(e=>e.id===i.evenementId);
-    if (!ev) return false;
+  // Stats globales
+  const totalAttente = useMemo(() => inscriptions.filter(i => {
+    const ev=evenements.find(e=>e.id===i.evenementId);
+    if(!ev) return false;
     const d=new Date(ev.date+'T12:00:00');
-    return d.getFullYear()===year && d.getMonth()===month && i.statut==='valide';
-  }).length;
+    return d.getFullYear()===year&&d.getMonth()===month&&i.statut==='en_attente';
+  }).length, [inscriptions, evenements, year, month]);
 
-  const totalAttente = toutesAttentes.length;
+  const totalValides = useMemo(() => inscActives.filter(i => {
+    const ev=evenements.find(e=>e.id===i.evenementId);
+    if(!ev) return false;
+    const d=new Date(ev.date+'T12:00:00');
+    return d.getFullYear()===year&&d.getMonth()===month&&i.statut==='valide';
+  }).length, [inscActives, evenements, year, month]);
 
-  const postsNonPourvus = evMois.reduce((acc, ev) => {
-    const valides = inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').length;
-    return acc + Math.max(0, ev.effectif - valides);
-  }, 0);
+  const selectedEv = evenements.find(e=>e.id===selectedEvId);
+  const selectedSal = salaries.find(s=>s.id===selectedSalId);
 
-  function heuresSalarie(salarieId) {
-    return evMois.reduce((acc, ev) => {
-      const insc = inscActives.find(i=>i.evenementId===ev.id&&i.salarieId===salarieId&&i.statut==='valide');
-      return acc + (insc ? dureeH(ev.debut, ev.fin) : 0);
-    }, 0);
-  }
+  // Données de l'événement sélectionné
+  const evInscrits = useMemo(() => selectedEvId
+    ? inscActives.filter(i=>i.evenementId===selectedEvId&&i.statut==='valide')
+      .map(i=>({...i, sal:salaries.find(s=>s.id===i.salarieId)}))
+      .filter(i=>i.sal)
+      .sort((a,b)=>(missionsPar[b.sal.id]||0)-(missionsPar[a.sal.id]||0))
+    : [], [selectedEvId, inscActives, salaries, missionsPar]);
+
+  const evAttentes = useMemo(() => selectedEvId
+    ? inscriptions.filter(i=>i.evenementId===selectedEvId&&i.statut==='en_attente')
+      .map(i=>({...i, sal:salaries.find(s=>s.id===i.salarieId)}))
+      .filter(i=>i.sal)
+      .sort((a,b)=>(missionsPar[a.sal.id]||0)-(missionsPar[b.sal.id]||0))
+    : [], [selectedEvId, inscriptions, salaries, missionsPar]);
+
+  // Salariés non inscrits, triés par nb missions croissant (les moins chargés en premier)
+  const salDispo = useMemo(() => selectedEvId
+    ? [...salaries]
+        .filter(s => !inscriptions.find(i=>i.evenementId===selectedEvId&&i.salarieId===s.id&&i.statut!=='retire'))
+        .sort((a,b) => (missionsPar[a.id]||0)-(missionsPar[b.id]||0))
+    : [], [selectedEvId, salaries, inscriptions, missionsPar]);
 
   async function valider(inscId) {
     setSaving(p=>({...p,[inscId]:true}));
-    await updateInscription(inscId, 'valide');
-    setSaving(p=>({...p,[inscId]:false}));
-  }
-  async function handleRetirer(inscId) {
-    setSaving(p=>({...p,[inscId]:true}));
-    await retireInscription(inscId, 'admin');
+    await updateInscription(inscId,'valide');
     setSaving(p=>({...p,[inscId]:false}));
   }
   async function refuser(inscId) {
     setSaving(p=>({...p,[inscId]:true}));
-    await retireInscription(inscId, 'admin');
+    await retireInscription(inscId,'admin');
     setSaving(p=>({...p,[inscId]:false}));
   }
-  async function inscrire(evId, salarieId) {
-    const exists = inscriptions.find(i=>i.evenementId===evId&&i.salarieId===salarieId&&i.statut!=='retire');
-    if (exists) return;
-    const retire = inscriptions.find(i=>i.evenementId===evId&&i.salarieId===salarieId&&i.statut==='retire');
-    if (retire) { await reactiverInscription(retire.id, 'valide', 'admin'); return; }
-    await addInscription({ evenementId:evId, salarieId, statut:'valide', source:'admin' });
+  async function retirer(inscId) {
+    setSaving(p=>({...p,[inscId]:true}));
+    await retireInscription(inscId,'admin');
+    setSaving(p=>({...p,[inscId]:false}));
   }
-  async function validerTousEvenement(evId) {
-    const attentes = inscriptions.filter(i=>i.evenementId===evId&&i.statut==='en_attente');
-    for (const i of attentes) await updateInscription(i.id, 'valide');
+  async function validerTousEv() {
+    if(!selectedEvId) return;
+    for(const i of evAttentes) await updateInscription(i.id,'valide');
+  }
+  async function inscrire(salarieId) {
+    if(!selectedEvId) return;
+    const retire=inscriptions.find(i=>i.evenementId===selectedEvId&&i.salarieId===salarieId&&i.statut==='retire');
+    if(retire){ await reactiverInscription(retire.id,'valide','admin'); return; }
+    await addInscription({evenementId:selectedEvId, salarieId, statut:'valide', source:'admin'});
   }
   async function validerToutMois() {
-    if (!confirm(`Valider toutes les demandes en attente de ${MONTHS[month]} ?`)) return;
-    for (const i of toutesAttentes) await updateInscription(i.id, 'valide');
+    if(!confirm(`Valider TOUTES les demandes en attente de ${MONTHS[month]} ?`)) return;
+    const attentes = inscriptions.filter(i=>{
+      const ev=evenements.find(e=>e.id===i.evenementId);
+      if(!ev) return false;
+      const d=new Date(ev.date+'T12:00:00');
+      return d.getFullYear()===year&&d.getMonth()===month&&i.statut==='en_attente';
+    });
+    for(const i of attentes) await updateInscription(i.id,'valide');
   }
 
   const s = styles;
-  const selectedEv = evenements.find(e => e.id === selectedEvId);
-  const selectedSal = salaries.find(s => s.id === selectedSalId);
+  const evFiltres = evMois.filter(ev=>(ev.nom||'').toLowerCase().includes(searchEv.toLowerCase())||(ev.ref||'').toLowerCase().includes(searchEv.toLowerCase()));
+
+  // Onglet par salarié
+  const salFiltres = [...salaries]
+    .filter(s=>`${s.prenom} ${s.nom}`.toLowerCase().includes(searchSal.toLowerCase()))
+    .sort((a,b)=>a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom));
+
+  const salMois = selectedSal ? evMois.filter(ev=>inscActives.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='valide')) : [];
+  const salAttentesMois = selectedSal ? evMois.filter(ev=>inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='en_attente')) : [];
+  const salHeures = salMois.reduce((acc,ev)=>acc+dureeH(ev.debut,ev.fin),0);
 
   const subTabs = [
-    { key:'attente', label:`⏳ Demandes en attente`, badge: totalAttente },
-    { key:'evenement', label:'📅 Par événement' },
-    { key:'salarie', label:'👤 Par salarié' },
-    { key:'tableau', label:"📊 Vue d'ensemble" },
+    { key:'planning', label:'📅 Gestion planning', badge: 0 },
+    { key:'attente',  label:'⏳ Toutes les attentes', badge: totalAttente },
+    { key:'salarie',  label:'👤 Par salarié', badge: 0 },
   ];
 
   return (
     <div>
       {/* Toolbar mois */}
-      <div style={s.toolbar}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <button style={s.navBtn} onClick={()=>setCurrent(new Date(year,month-1,1))}>‹</button>
           <button style={s.navBtn} onClick={()=>setCurrent(new Date(year,month+1,1))}>›</button>
-          <span style={{ fontSize:16, fontWeight:500, color:'var(--text)' }}>{MONTHS[month]} {year}</span>
+          <span style={{ fontSize:16, fontWeight:600 }}>{MONTHS[month]} {year}</span>
         </div>
-        {totalAttente > 0 && (
-          <button onClick={validerToutMois} style={{ background:'#EAF3DE', color:'#3B6D11', border:'0.5px solid #C0DD97', fontSize:12, fontWeight:500, padding:'7px 14px', borderRadius:8, cursor:'pointer', fontFamily:'var(--font)' }}>
-            ✓ Tout valider le mois
-          </button>
-        )}
+        <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+          {totalAttente > 0 && (
+            <span style={{ background:'#FAEEDA', color:'#854F0B', fontSize:12, fontWeight:600, padding:'5px 12px', borderRadius:20 }}>
+              ⏳ {totalAttente} en attente
+            </span>
+          )}
+          {totalAttente > 0 && (
+            <button onClick={validerToutMois} style={{ background:'#EAF3DE', color:'#3B6D11', border:'1px solid #C0DD97', fontSize:12, fontWeight:500, padding:'6px 14px', borderRadius:8, cursor:'pointer', fontFamily:'var(--font)' }}>
+              ✓ Tout valider
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Stats globales */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
+      {/* Stats rapides */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginBottom:14 }}>
         {[
-          { label:'Événements', value:evMois.length },
-          { label:'Inscriptions validées', value:totalValides },
-          { label:'En attente', value:totalAttente, warn:totalAttente>0 },
-          { label:'Postes non pourvus', value:postsNonPourvus, danger:postsNonPourvus>0 },
-        ].map(({ label, value, warn, danger }) => (
+          { label:'Événements ce mois', value:evMois.length, color:'var(--text)' },
+          { label:'Inscriptions validées', value:totalValides, color:'#3B6D11' },
+          { label:'Demandes en attente', value:totalAttente, color:totalAttente>0?'#854F0B':'var(--text)' },
+        ].map(({label,value,color})=>(
           <div key={label} style={{ background:'#f8f6f2', borderRadius:10, padding:'10px 14px' }}>
-            <div style={{ fontSize:11, color:'var(--text-2)', marginBottom:4 }}>{label}</div>
-            <div style={{ fontSize:22, fontWeight:500, fontFamily:'var(--font-mono)', color:danger?'#A32D2D':warn?'#854F0B':'var(--text)' }}>{value}</div>
+            <div style={{ fontSize:11, color:'var(--text-2)', marginBottom:3 }}>{label}</div>
+            <div style={{ fontSize:22, fontWeight:700, fontFamily:'var(--font-mono)', color }}>{value}</div>
           </div>
         ))}
       </div>
 
       {/* Sous-onglets */}
-      <div style={{ display:'flex', gap:4, background:'#f8f6f2', borderRadius:10, padding:4, marginBottom:16, width:'fit-content' }}>
-        {subTabs.map(({ key, label, badge }) => (
+      <div style={{ display:'flex', gap:4, background:'#f8f6f2', borderRadius:10, padding:4, marginBottom:14, width:'fit-content' }}>
+        {subTabs.map(({key,label,badge})=>(
           <button key={key} onClick={()=>setSubTab(key)} style={{
-            padding:'7px 14px', borderRadius:7, border:'none', fontSize:12,
-            fontWeight: subTab===key ? 600 : 400, cursor:'pointer',
-            background: subTab===key ? '#fff' : 'transparent',
-            color: subTab===key ? 'var(--text)' : 'var(--text-2)',
-            boxShadow: subTab===key ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-            fontFamily:'var(--font)', position:'relative', display:'flex', alignItems:'center', gap:6,
+            padding:'7px 14px', borderRadius:7, border:'none', fontSize:12, display:'flex', alignItems:'center', gap:6,
+            fontWeight:subTab===key?600:400, cursor:'pointer',
+            background:subTab===key?'#fff':'transparent',
+            color:subTab===key?'var(--text)':'var(--text-2)',
+            boxShadow:subTab===key?'0 1px 3px rgba(0,0,0,0.08)':'none',
+            fontFamily:'var(--font)',
           }}>
             {label}
-            {badge > 0 && <span style={{ background:'#a32d2d', color:'#fff', borderRadius:10, fontSize:10, padding:'1px 6px', fontWeight:700 }}>{badge}</span>}
+            {badge>0&&<span style={{ background:'#a32d2d', color:'#fff', borderRadius:10, fontSize:10, padding:'1px 6px', fontWeight:700 }}>{badge}</span>}
           </button>
         ))}
       </div>
 
-      {/* ═══════ ONGLET DEMANDES EN ATTENTE ═══════ */}
-      {subTab === 'attente' && (
-        <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden' }}>
-          {toutesAttentes.length === 0 ? (
-            <div style={{ textAlign:'center', padding:'48px', color:'var(--text-3)' }}>
-              <div style={{ fontSize:36, marginBottom:12 }}>✅</div>
-              <div>Aucune demande en attente ce mois-ci.</div>
-            </div>
-          ) : (
-            <div>
-              {toutesAttentes.map((insc, idx) => {
-                const ev = insc.evenement, sal = insc.salarie;
-                const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label:ev.type, icon:'📌', bg:'#f1efe8', color:'#5f5e5a' };
-                const c = AVATAR_COLORS[sal.colorIdx % AVATAR_COLORS.length];
-                const diplomes = getDiplomeBadge(sal);
-                const age = getAge(sal.dateNaissance);
-                const inscritsCount = inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').length;
-                return (
-                  <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 18px', borderBottom: idx<toutesAttentes.length-1?'1px solid var(--border)':'none' }}>
-                    {/* Avatar salarié */}
-                    <div style={{ width:38, height:38, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:600, flexShrink:0, position:'relative' }}>
-                      {initiales(sal.prenom, sal.nom)}
-                      {age !== null && age < 18 && <span style={{ position:'absolute', top:-4, right:-4, background:'#A32D2D', color:'#fff', fontSize:8, borderRadius:8, padding:'0 4px' }}>-18</span>}
-                    </div>
-                    {/* Infos */}
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:14, fontWeight:600 }}>{sal.prenom} {sal.nom}
-                        {diplomes.length > 0 && <span style={{ marginLeft:8 }}>{diplomes.map(d => <span key={d.label} style={{ fontSize:10, background:d.bg, color:d.color, padding:'1px 6px', borderRadius:10, marginRight:3 }}>{d.label}</span>)}</span>}
-                      </div>
-                      <div style={{ fontSize:12, color:'var(--text-2)', marginTop:3 }}>
-                        souhaite s'inscrire à <strong>{ev.nom || mt.label}</strong>
-                        {ev.ref && <span style={{ fontFamily:'var(--font-mono)', fontSize:10, color:'var(--text-3)' }}> [{ev.ref}]</span>}
-                      </div>
-                      <div style={{ fontSize:11, color:'var(--text-3)', marginTop:2 }}>
-                        {fmtDate(ev.date)} · {ev.debut}–{ev.fin} · {inscritsCount}/{ev.effectif} places
-                      </div>
-                    </div>
-                    {/* Type badge */}
-                    <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'3px 9px', borderRadius:20, fontWeight:500, flexShrink:0 }}>{mt.icon} {mt.label}</span>
-                    {/* Actions */}
-                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-                      <button onClick={()=>valider(insc.id)} disabled={saving[insc.id]}
-                        style={{ background:'#EAF3DE', color:'#3B6D11', border:'none', borderRadius:8, padding:'8px 14px', fontSize:12, fontWeight:600, cursor:'pointer' }}>✓ Valider</button>
-                      <button onClick={()=>refuser(insc.id)} disabled={saving[insc.id]}
-                        style={{ background:'#FCEBEB', color:'#A32D2D', border:'none', borderRadius:8, padding:'8px 14px', fontSize:12, fontWeight:600, cursor:'pointer' }}>✕ Refuser</button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ═══════ ONGLET GESTION PLANNING ═══════ */}
+      {subTab==='planning' && (
+        <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', gap:16, alignItems:'start' }}>
 
-      {/* ═══════ ONGLET PAR ÉVÉNEMENT ═══════ */}
-      {subTab === 'evenement' && (
-        <div style={{ display:'grid', gridTemplateColumns: selectedEv ? '280px 1fr' : '1fr', gap:16 }}>
-          {/* Liste événements */}
+          {/* ─── COLONNE GAUCHE : liste événements ─── */}
           <div>
             <input
-              style={{ width:'100%', padding:'8px 12px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, marginBottom:10, fontFamily:'var(--font)' }}
-              placeholder="Rechercher un événement…"
+              style={{ width:'100%', padding:'8px 12px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, marginBottom:8, fontFamily:'var(--font)', boxSizing:'border-box' }}
+              placeholder="Rechercher…"
               value={searchEv}
               onChange={e=>setSearchEv(e.target.value)}
             />
-            <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight: selectedEv ? 600 : 'none', overflowY: selectedEv ? 'auto' : 'visible' }}>
-              {evMois.filter(ev => (ev.nom||'').toLowerCase().includes(searchEv.toLowerCase()) || (ev.ref||'').toLowerCase().includes(searchEv.toLowerCase())).map(ev => {
-                const mt = missionTypes[ev.type] || Object.values(missionTypes)[0] || { label:ev.type, icon:'📌', bg:'#f1efe8', color:'#5f5e5a' };
-                const inscritsCount = inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').length;
-                const attentesCount = inscriptions.filter(i=>i.evenementId===ev.id&&i.statut==='en_attente').length;
-                const isSel = selectedEvId === ev.id;
+            <div style={{ display:'flex', flexDirection:'column', gap:5, maxHeight:680, overflowY:'auto' }}>
+              {evFiltres.map(ev=>{
+                const mt=missionTypes[ev.type]||Object.values(missionTypes)[0]||{label:ev.type,icon:'📌',color:'#5f5e5a'};
+                const valides=inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').length;
+                const attentes=inscriptions.filter(i=>i.evenementId===ev.id&&i.statut==='en_attente').length;
+                const isSel=selectedEvId===ev.id;
+                const isPast=ev.date<now;
                 return (
                   <div key={ev.id} onClick={()=>setSelectedEvId(ev.id)}
-                    style={{ background:'#fff', borderRadius:10, border:`1px solid ${isSel?mt.color:'var(--border)'}`, padding:'12px 14px', cursor:'pointer' }}>
-                    <div style={{ fontSize:13, fontWeight:600 }}>{ev.nom || mt.label}</div>
-                    <div style={{ fontSize:11, color:'var(--text-2)', marginTop:3 }}>{fmtDate(ev.date)} · {ev.debut}–{ev.fin}</div>
-                    <div style={{ display:'flex', alignItems:'center', gap:6, marginTop:6 }}>
-                      <span style={{ fontSize:11, color: inscritsCount>=ev.effectif?'#3B6D11':'#854F0B', fontWeight:600 }}>{inscritsCount}/{ev.effectif}</span>
-                      {attentesCount > 0 && <span style={{ background:'#FAEEDA', color:'#854F0B', fontSize:10, padding:'1px 6px', borderRadius:10 }}>⏳ {attentesCount}</span>}
+                    style={{ background:isSel?'#fff5f5':'#fff', borderRadius:10,
+                      border:`1.5px solid ${isSel?'#a32d2d':'var(--border)'}`,
+                      padding:'10px 12px', cursor:'pointer', opacity:isPast?0.65:1,
+                      transition:'all 0.1s' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:3 }}>
+                      <span style={{ fontSize:12 }}>{mt.icon}</span>
+                      <span style={{ fontSize:13, fontWeight:600, flex:1, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{ev.nom}</span>
+                    </div>
+                    {ev.ref&&<div style={{ fontSize:10, color:'var(--text-3)', fontFamily:'var(--font-mono)', marginBottom:3 }}>{ev.ref}</div>}
+                    <div style={{ fontSize:11, color:'var(--text-2)', marginBottom:5 }}>{fmtDate(ev.date)} · {ev.debut}–{ev.fin}</div>
+                    <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                      <span style={{ fontSize:11, fontWeight:600, color:valides>=ev.effectif?'#3B6D11':'#854F0B' }}>
+                        👥 {valides}/{ev.effectif}
+                      </span>
+                      {attentes>0&&<span style={{ background:'#FAEEDA', color:'#854F0B', fontSize:10, padding:'1px 7px', borderRadius:10, fontWeight:600 }}>⏳ {attentes}</span>}
+                      {valides>=ev.effectif&&<span style={{ background:'#EAF3DE', color:'#3B6D11', fontSize:10, padding:'1px 7px', borderRadius:10 }}>✓ Complet</span>}
                     </div>
                   </div>
                 );
               })}
-              {evMois.length === 0 && <div style={{ textAlign:'center', padding:24, color:'var(--text-3)', fontSize:13 }}>Aucun événement ce mois.</div>}
+              {evFiltres.length===0&&<div style={{ textAlign:'center', padding:24, color:'var(--text-3)', fontSize:13 }}>Aucun événement</div>}
             </div>
           </div>
 
-          {/* Détail événement sélectionné */}
-          {selectedEv && (() => {
-            const mt = missionTypes[selectedEv.type] || Object.values(missionTypes)[0] || { label:selectedEv.type, icon:'📌', bg:'#f1efe8', color:'#5f5e5a' };
-            const inscritsValides = inscActives.filter(i=>i.evenementId===selectedEv.id&&i.statut==='valide');
-            const attentes = inscriptions.filter(i=>i.evenementId===selectedEv.id&&i.statut==='en_attente');
-            const dispoSalaries = salaries.filter(s => !inscriptions.find(i=>i.evenementId===selectedEv.id&&i.salarieId===s.id&&i.statut!=='retire'));
+          {/* ─── COLONNE DROITE : fiche événement ─── */}
+          {!selectedEv ? (
+            <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:'60px 20px', textAlign:'center', color:'var(--text-3)' }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>👈</div>
+              <div style={{ fontSize:14 }}>Sélectionnez un événement pour gérer son équipe</div>
+            </div>
+          ) : (()=>{
+            const mt=missionTypes[selectedEv.type]||Object.values(missionTypes)[0]||{label:selectedEv.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
             return (
-              <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:20 }}>
-                <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:16 }}>
+              <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden' }}>
+                {/* Header événement */}
+                <div style={{ background:mt.color, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <div>
-                    <div style={{ fontSize:17, fontWeight:700 }}>{selectedEv.nom || mt.label}</div>
-                    {selectedEv.ref && <div style={{ fontSize:12, color:'var(--text-3)', fontFamily:'var(--font-mono)' }}>{selectedEv.ref}</div>}
-                    <div style={{ fontSize:13, color:'var(--text-2)', marginTop:6 }}>{fmtDate(selectedEv.date)} · {selectedEv.debut}–{selectedEv.fin}{selectedEv.lieu && ` · 📍 ${selectedEv.lieu}`}</div>
+                    <div style={{ fontSize:16, fontWeight:700, color:'#fff' }}>{selectedEv.nom}</div>
+                    <div style={{ fontSize:12, color:'rgba(255,255,255,0.8)', marginTop:2 }}>
+                      {fmtDate(selectedEv.date)} · {selectedEv.debut}–{selectedEv.fin}
+                      {selectedEv.lieu&&` · 📍 ${selectedEv.lieu}`}
+                      {selectedEv.ref&&<span style={{ fontFamily:'var(--font-mono)', marginLeft:8, opacity:0.7 }}>[{selectedEv.ref}]</span>}
+                    </div>
                   </div>
-                  <span style={{ background:mt.bg, color:mt.color, fontSize:12, padding:'4px 12px', borderRadius:20, fontWeight:500 }}>{mt.icon} {mt.label}</span>
+                  <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                    <span style={{ background:'rgba(255,255,255,0.2)', color:'#fff', fontSize:13, fontWeight:700, padding:'4px 12px', borderRadius:20 }}>
+                      {evInscrits.length}/{selectedEv.effectif} 👥
+                    </span>
+                  </div>
                 </div>
 
-                {/* Demandes en attente pour cet event */}
-                {attentes.length > 0 && (
-                  <div style={{ marginBottom:18 }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:'#854F0B', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>⏳ Demandes en attente ({attentes.length})</div>
-                    {attentes.map(insc => {
-                      const sal = salaries.find(s=>s.id===insc.salarieId);
-                      if (!sal) return null;
-                      const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                <div style={{ padding:'16px 18px', display:'flex', flexDirection:'column', gap:20 }}>
+
+                  {/* ── DEMANDES EN ATTENTE ── */}
+                  {evAttentes.length>0&&(
+                    <div>
+                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#854F0B', textTransform:'uppercase', letterSpacing:'0.05em' }}>
+                          ⏳ Demandes en attente ({evAttentes.length})
+                        </div>
+                        <button onClick={validerTousEv} style={{ background:'#EAF3DE', color:'#3B6D11', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, fontWeight:600, cursor:'pointer', fontFamily:'var(--font)' }}>
+                          ✓ Tout valider
+                        </button>
+                      </div>
+                      <div style={{ display:'flex', flexDirection:'column', gap:6 }}>
+                        {evAttentes.map(insc=>{
+                          const sal=insc.sal;
+                          const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                          const nb=missionsPar[sal.id]||0;
+                          const ch=chargeColor(nb);
+                          const age=getAge(sal.dateNaissance);
+                          const diplomes=getDiplomes(sal);
+                          return (
+                            <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 12px', background:'#fffdf7', borderRadius:10, border:'1px solid #f0d5a0' }}>
+                              <div style={{ width:34, height:34, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:600, flexShrink:0, position:'relative' }}>
+                                {ini(sal.prenom,sal.nom)}
+                                {age!==null&&age<18&&<span style={{ position:'absolute', top:-3, right:-3, background:'#A32D2D', color:'#fff', fontSize:7, borderRadius:8, padding:'0 3px' }}>-18</span>}
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:600 }}>{sal.prenom} {sal.nom}</div>
+                                <div style={{ display:'flex', gap:3, flexWrap:'wrap', marginTop:2 }}>
+                                  {diplomes.map(d=><span key={d.label} style={{ fontSize:9, background:d.bg, color:d.color, padding:'1px 5px', borderRadius:8 }}>{d.label}</span>)}
+                                </div>
+                              </div>
+                              {/* Badge charge */}
+                              <div style={{ background:ch.bg, color:ch.txt, borderRadius:8, padding:'4px 10px', textAlign:'center', flexShrink:0 }}>
+                                <div style={{ fontSize:14, fontWeight:700, fontFamily:'var(--font-mono)' }}>{nb}</div>
+                                <div style={{ fontSize:9, fontWeight:500 }}>mission{nb>1?'s':''}</div>
+                              </div>
+                              {/* Actions */}
+                              <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                                <button onClick={()=>valider(insc.id)} disabled={saving[insc.id]}
+                                  style={{ width:34, height:34, borderRadius:8, background:'#EAF3DE', color:'#3B6D11', border:'none', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>✓</button>
+                                <button onClick={()=>refuser(insc.id)} disabled={saving[insc.id]}
+                                  style={{ width:34, height:34, borderRadius:8, background:'#FCEBEB', color:'#A32D2D', border:'none', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                                <button onClick={()=>setHistorique({salarie:sal, evenement:selectedEv})}
+                                  style={{ width:34, height:34, borderRadius:8, background:'#f8f6f2', color:'var(--text-3)', border:'1px solid var(--border)', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center' }} title="Historique">🕐</button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ── ÉQUIPE VALIDÉE ── */}
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:'#3B6D11', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+                      ✅ Équipe validée ({evInscrits.length}/{selectedEv.effectif})
+                    </div>
+                    {evInscrits.length===0?(
+                      <div style={{ fontSize:13, color:'var(--text-3)', fontStyle:'italic', padding:'10px 0' }}>Aucun salarié validé pour cet événement.</div>
+                    ):(
+                      <div style={{ display:'flex', flexDirection:'column', gap:5 }}>
+                        {evInscrits.map(insc=>{
+                          const sal=insc.sal;
+                          const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                          const nb=missionsPar[sal.id]||0;
+                          const ch=chargeColor(nb);
+                          const diplomes=getDiplomes(sal);
+                          const age=getAge(sal.dateNaissance);
+                          return (
+                            <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:'#f8fbf5', borderRadius:10, border:'1px solid #c8e6c9' }}>
+                              <div style={{ width:32, height:32, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, flexShrink:0, position:'relative' }}>
+                                {ini(sal.prenom,sal.nom)}
+                                {age!==null&&age<18&&<span style={{ position:'absolute', top:-3, right:-3, background:'#A32D2D', color:'#fff', fontSize:7, borderRadius:8, padding:'0 3px' }}>-18</span>}
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ fontSize:13, fontWeight:500 }}>{sal.prenom} {sal.nom}</div>
+                                <div style={{ display:'flex', gap:3, flexWrap:'wrap', marginTop:2 }}>
+                                  {diplomes.map(d=><span key={d.label} style={{ fontSize:9, background:d.bg, color:d.color, padding:'1px 5px', borderRadius:8 }}>{d.label}</span>)}
+                                </div>
+                              </div>
+                              <div style={{ background:ch.bg, color:ch.txt, borderRadius:8, padding:'3px 8px', textAlign:'center', flexShrink:0 }}>
+                                <div style={{ fontSize:13, fontWeight:700, fontFamily:'var(--font-mono)' }}>{nb}</div>
+                                <div style={{ fontSize:9 }}>mission{nb>1?'s':''}</div>
+                              </div>
+                              <button onClick={()=>retirer(insc.id)} disabled={saving[insc.id]}
+                                title="Retirer de la mission"
+                                style={{ width:28, height:28, borderRadius:6, background:'none', color:'var(--text-3)', border:'1px solid var(--border)', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                              <button onClick={()=>setHistorique({salarie:sal, evenement:selectedEv})}
+                                style={{ width:28, height:28, borderRadius:6, background:'none', color:'var(--text-3)', border:'1px solid var(--border)', cursor:'pointer', fontSize:11, display:'flex', alignItems:'center', justifyContent:'center' }}>🕐</button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ── AJOUTER UN SALARIÉ ── */}
+                  <div>
+                    <div style={{ fontSize:12, fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
+                      ➕ Ajouter un salarié — triés par disponibilité
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:6, maxHeight:240, overflowY:'auto' }}>
+                      {salDispo.map(sal=>{
+                        const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                        const nb=missionsPar[sal.id]||0;
+                        const ch=chargeColor(nb);
+                        const diplomes=getDiplomes(sal);
+                        return (
+                          <button key={sal.id} onClick={()=>inscrire(sal.id)}
+                            style={{ display:'flex', alignItems:'center', gap:8, padding:'7px 10px', background:'#fff', border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', fontFamily:'var(--font)', textAlign:'left', transition:'all 0.1s' }}
+                            onMouseEnter={e=>e.currentTarget.style.borderColor='#a32d2d'}
+                            onMouseLeave={e=>e.currentTarget.style.borderColor='var(--border)'}>
+                            <div style={{ width:28, height:28, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:600, flexShrink:0 }}>{ini(sal.prenom,sal.nom)}</div>
+                            <div style={{ flex:1, minWidth:0 }}>
+                              <div style={{ fontSize:12, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sal.prenom} {sal.nom}</div>
+                              <div style={{ display:'flex', gap:2, marginTop:1 }}>
+                                {diplomes.slice(0,2).map(d=><span key={d.label} style={{ fontSize:8, background:d.bg, color:d.color, padding:'0 4px', borderRadius:6 }}>{d.label}</span>)}
+                              </div>
+                            </div>
+                            <div style={{ background:ch.bg, color:ch.txt, borderRadius:6, padding:'2px 6px', fontSize:11, fontWeight:700, flexShrink:0 }}>{nb}</div>
+                          </button>
+                        );
+                      })}
+                      {salDispo.length===0&&<div style={{ fontSize:12, color:'var(--text-3)', fontStyle:'italic', gridColumn:'1/-1' }}>Tous les salariés sont déjà inscrits.</div>}
+                    </div>
+                  </div>
+
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* ═══════ ONGLET TOUTES LES ATTENTES ═══════ */}
+      {subTab==='attente' && (()=>{
+        const toutesAttentes = inscriptions
+          .filter(i=>{
+            const ev=evenements.find(e=>e.id===i.evenementId);
+            if(!ev) return false;
+            const d=new Date(ev.date+'T12:00:00');
+            return d.getFullYear()===year&&d.getMonth()===month&&i.statut==='en_attente';
+          })
+          .map(i=>({...i, ev:evenements.find(e=>e.id===i.evenementId), sal:salaries.find(s=>s.id===i.salarieId)}))
+          .filter(i=>i.ev&&i.sal)
+          .sort((a,b)=>a.ev.date.localeCompare(b.ev.date)||(missionsPar[a.sal.id]||0)-(missionsPar[b.sal.id]||0));
+        return (
+          <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden' }}>
+            {toutesAttentes.length===0?(
+              <div style={{ textAlign:'center', padding:'48px', color:'var(--text-3)' }}>
+                <div style={{ fontSize:36, marginBottom:12 }}>✅</div>
+                <div>Aucune demande en attente ce mois-ci.</div>
+              </div>
+            ):(
+              toutesAttentes.map((insc,idx)=>{
+                const {ev,sal}=insc;
+                const mt=missionTypes[ev.type]||{icon:'📌',label:ev.type,bg:'#f1efe8',color:'#5f5e5a'};
+                const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                const nb=missionsPar[sal.id]||0;
+                const ch=chargeColor(nb);
+                const age=getAge(sal.dateNaissance);
+                const diplomes=getDiplomes(sal);
+                return (
+                  <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:12, padding:'13px 18px', borderBottom:idx<toutesAttentes.length-1?'1px solid var(--border)':'none' }}>
+                    <div style={{ width:36, height:36, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:12, fontWeight:600, flexShrink:0, position:'relative' }}>
+                      {ini(sal.prenom,sal.nom)}
+                      {age!==null&&age<18&&<span style={{ position:'absolute', top:-3, right:-3, background:'#A32D2D', color:'#fff', fontSize:7, borderRadius:8, padding:'0 3px' }}>-18</span>}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:600 }}>{sal.prenom} {sal.nom}
+                        <span style={{ marginLeft:8 }}>{diplomes.map(d=><span key={d.label} style={{ fontSize:9, background:d.bg, color:d.color, padding:'1px 5px', borderRadius:8, marginRight:2 }}>{d.label}</span>)}</span>
+                      </div>
+                      <div style={{ fontSize:12, color:'var(--text-2)', marginTop:2 }}>
+                        <span style={{ background:mt.bg, color:mt.color, fontSize:10, padding:'1px 6px', borderRadius:10, marginRight:6 }}>{mt.icon} {mt.label}</span>
+                        {ev.nom} · {fmtDate(ev.date)} · {ev.debut}–{ev.fin}
+                      </div>
+                    </div>
+                    <div style={{ background:ch.bg, color:ch.txt, borderRadius:8, padding:'4px 10px', textAlign:'center', flexShrink:0 }}>
+                      <div style={{ fontSize:14, fontWeight:700, fontFamily:'var(--font-mono)' }}>{nb}</div>
+                      <div style={{ fontSize:9 }}>mission{nb>1?'s':''}</div>
+                    </div>
+                    <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+                      <button onClick={()=>valider(insc.id)} disabled={saving[insc.id]}
+                        style={{ width:34, height:34, borderRadius:8, background:'#EAF3DE', color:'#3B6D11', border:'none', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>✓</button>
+                      <button onClick={()=>refuser(insc.id)} disabled={saving[insc.id]}
+                        style={{ width:34, height:34, borderRadius:8, background:'#FCEBEB', color:'#A32D2D', border:'none', cursor:'pointer', fontSize:16, fontWeight:700, display:'flex', alignItems:'center', justifyContent:'center' }}>✕</button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+        );
+      })()}
+
+      {/* ═══════ ONGLET PAR SALARIÉ ═══════ */}
+      {subTab==='salarie' && (
+        <div style={{ display:'grid', gridTemplateColumns:'260px 1fr', gap:16 }}>
+          <div>
+            <input
+              style={{ width:'100%', padding:'8px 12px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, marginBottom:8, fontFamily:'var(--font)', boxSizing:'border-box' }}
+              placeholder="Rechercher un salarié…"
+              value={searchSal}
+              onChange={e=>setSearchSal(e.target.value)}
+            />
+            <div style={{ display:'flex', flexDirection:'column', gap:5, maxHeight:640, overflowY:'auto' }}>
+              {salFiltres.map(sal=>{
+                const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
+                const nb=missionsPar[sal.id]||0;
+                const ch=chargeColor(nb);
+                const isSel=selectedSalId===sal.id;
+                return (
+                  <div key={sal.id} onClick={()=>setSelectedSalId(sal.id)}
+                    style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 12px', background:isSel?'#fff5f5':'#fff', borderRadius:10, border:`1.5px solid ${isSel?'#a32d2d':'var(--border)'}`, cursor:'pointer' }}>
+                    <div style={{ width:30, height:30, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:600, flexShrink:0 }}>{ini(sal.prenom,sal.nom)}</div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{sal.prenom} {sal.nom}</div>
+                    </div>
+                    <div style={{ background:ch.bg, color:ch.txt, borderRadius:7, padding:'2px 8px', fontSize:12, fontWeight:700, flexShrink:0 }}>{nb}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+          {selectedSal ? (()=>{
+            const c=AVATAR_COLORS[selectedSal.colorIdx%AVATAR_COLORS.length];
+            const nb=missionsPar[selectedSal.id]||0;
+            const diplomes=getDiplomes(selectedSal);
+            return (
+              <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:18 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:18, paddingBottom:14, borderBottom:'1px solid var(--border)' }}>
+                  <div style={{ width:48, height:48, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:700 }}>{ini(selectedSal.prenom,selectedSal.nom)}</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontSize:17, fontWeight:700 }}>{selectedSal.prenom} {selectedSal.nom}</div>
+                    <div style={{ display:'flex', gap:4, marginTop:4 }}>{diplomes.map(d=><span key={d.label} style={{ fontSize:11, background:d.bg, color:d.color, padding:'2px 8px', borderRadius:20 }}>{d.label}</span>)}</div>
+                  </div>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:10, color:'var(--text-3)', marginBottom:2 }}>Missions ce mois</div>
+                    <div style={{ fontSize:24, fontWeight:700, fontFamily:'var(--font-mono)', color:nb>5?'#A32D2D':nb>2?'#854F0B':'#3B6D11' }}>{nb}</div>
+                  </div>
+                  <div style={{ textAlign:'center' }}>
+                    <div style={{ fontSize:10, color:'var(--text-3)', marginBottom:2 }}>Heures</div>
+                    <div style={{ fontSize:24, fontWeight:700, fontFamily:'var(--font-mono)', color:'var(--text)' }}>{fmtH(salHeures)}</div>
+                  </div>
+                </div>
+                {salAttentesMois.length>0&&(
+                  <div style={{ marginBottom:16 }}>
+                    <div style={{ fontSize:11, fontWeight:700, color:'#854F0B', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>⏳ Demandes en attente</div>
+                    {salAttentesMois.map(ev=>{
+                      const insc=inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='en_attente');
+                      const mt=missionTypes[ev.type]||{icon:'📌',label:ev.type,bg:'#f1efe8',color:'#5f5e5a'};
                       return (
-                        <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                          <div style={{ width:30, height:30, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600 }}>{initiales(sal.prenom,sal.nom)}</div>
-                          <span style={{ fontSize:13, flex:1 }}>{sal.prenom} {sal.nom}</span>
+                        <div key={ev.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
+                          <span style={{ background:mt.bg, color:mt.color, fontSize:10, padding:'2px 7px', borderRadius:10 }}>{mt.icon} {mt.label}</span>
+                          <span style={{ fontSize:13, flex:1 }}>{ev.nom} — {fmtDate(ev.date)}</span>
                           <button onClick={()=>valider(insc.id)} style={{ background:'#EAF3DE', color:'#3B6D11', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, cursor:'pointer', fontWeight:600 }}>✓</button>
                           <button onClick={()=>refuser(insc.id)} style={{ background:'#FCEBEB', color:'#A32D2D', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, cursor:'pointer', fontWeight:600 }}>✕</button>
                         </div>
@@ -293,126 +555,13 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                     })}
                   </div>
                 )}
-
-                {/* Équipe validée */}
-                <div style={{ marginBottom:14 }}>
-                  <div style={{ fontSize:11, fontWeight:600, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
-                    Équipe ({inscritsValides.length}/{selectedEv.effectif})
-                  </div>
-                  {inscritsValides.length === 0 ? (
-                    <div style={{ fontSize:13, color:'var(--text-3)', fontStyle:'italic' }}>Aucun salarié inscrit</div>
-                  ) : (
-                    inscritsValides.map(insc => {
-                      const sal = salaries.find(s=>s.id===insc.salarieId);
-                      if (!sal) return null;
-                      const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
-                      const diplomes = getDiplomeBadge(sal);
-                      return (
-                        <div key={insc.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                          <div style={{ width:30, height:30, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600 }}>{initiales(sal.prenom,sal.nom)}</div>
-                          <span style={{ fontSize:13, flex:1 }}>{sal.prenom} {sal.nom}</span>
-                          {diplomes.map(d=><span key={d.label} style={{ fontSize:10, background:d.bg, color:d.color, padding:'1px 6px', borderRadius:10, marginRight:3 }}>{d.label}</span>)}
-                          <button onClick={()=>handleRetirer(insc.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', fontSize:14 }}>✕</button>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-
-                {/* Ajouter un salarié */}
-                <select
-                  style={{ width:'100%', padding:'9px 12px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, fontFamily:'var(--font)' }}
-                  value="" onChange={e=>{ if(e.target.value) inscrire(selectedEv.id, e.target.value); e.target.value=''; }}
-                >
-                  <option value="">+ Inscrire un salarié…</option>
-                  {dispoSalaries.map(s=><option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
-                </select>
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {/* ═══════ ONGLET PAR SALARIÉ ═══════ */}
-      {subTab === 'salarie' && (
-        <div style={{ display:'grid', gridTemplateColumns: selectedSal ? '280px 1fr' : '1fr', gap:16 }}>
-          {/* Liste salariés */}
-          <div>
-            <input
-              style={{ width:'100%', padding:'8px 12px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, marginBottom:10, fontFamily:'var(--font)' }}
-              placeholder="Rechercher un salarié…"
-              value={searchSal}
-              onChange={e=>setSearchSal(e.target.value)}
-            />
-            <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight: selectedSal ? 600 : 'none', overflowY: selectedSal ? 'auto' : 'visible' }}>
-              {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).filter(sal => `${sal.prenom} ${sal.nom}`.toLowerCase().includes(searchSal.toLowerCase())).map(sal => {
-                const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
-                const h = heuresSalarie(sal.id);
-                const isSel = selectedSalId === sal.id;
-                const nbMissions = evMois.filter(ev => inscActives.find(i=>i.evenementId===ev.id&&i.salarieId===sal.id&&i.statut==='valide')).length;
-                return (
-                  <div key={sal.id} onClick={()=>setSelectedSalId(sal.id)}
-                    style={{ display:'flex', alignItems:'center', gap:10, background:'#fff', borderRadius:10, border:`1px solid ${isSel?'var(--red)':'var(--border)'}`, padding:'10px 12px', cursor:'pointer' }}>
-                    <div style={{ width:32, height:32, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:600, flexShrink:0 }}>{initiales(sal.prenom,sal.nom)}</div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:500, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.prenom} {sal.nom}</div>
-                      <div style={{ fontSize:11, color:'var(--text-2)' }}>{nbMissions} mission{nbMissions>1?'s':''}</div>
-                    </div>
-                    <div style={{ fontSize:12, fontWeight:600, fontFamily:'var(--font-mono)', color: h>48?'#A32D2D':h>35?'#854F0B':'#3B6D11' }}>{fmtH(h)}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Détail salarié sélectionné */}
-          {selectedSal && (() => {
-            const c = AVATAR_COLORS[selectedSal.colorIdx%AVATAR_COLORS.length];
-            const diplomes = getDiplomeBadge(selectedSal);
-            const evsSal = evMois.filter(ev => inscActives.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='valide'));
-            const attentesSal = evMois.filter(ev => inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='en_attente'));
-            const h = heuresSalarie(selectedSal.id);
-            return (
-              <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:20 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
-                  <div style={{ width:48, height:48, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:600 }}>{initiales(selectedSal.prenom,selectedSal.nom)}</div>
-                  <div>
-                    <div style={{ fontSize:17, fontWeight:700 }}>{selectedSal.prenom} {selectedSal.nom}</div>
-                    <div style={{ display:'flex', gap:4, marginTop:4 }}>{diplomes.map(d=><span key={d.label} style={{ fontSize:11, background:d.bg, color:d.color, padding:'2px 8px', borderRadius:20 }}>{d.label}</span>)}</div>
-                  </div>
-                  <div style={{ marginLeft:'auto', textAlign:'right' }}>
-                    <div style={{ fontSize:11, color:'var(--text-3)' }}>Heures ce mois</div>
-                    <div style={{ fontSize:20, fontWeight:700, fontFamily:'var(--font-mono)', color: h>48?'#A32D2D':h>35?'#854F0B':'#3B6D11' }}>{fmtH(h)}</div>
-                  </div>
-                </div>
-
-                {attentesSal.length > 0 && (
-                  <div style={{ marginBottom:16 }}>
-                    <div style={{ fontSize:11, fontWeight:600, color:'#854F0B', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>⏳ Demandes en attente</div>
-                    {attentesSal.map(ev => {
-                      const insc = inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===selectedSal.id&&i.statut==='en_attente');
-                      const mt = missionTypes[ev.type]||{};
-                      return (
-                        <div key={ev.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                          <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'2px 8px', borderRadius:20 }}>{mt.icon} {mt.label}</span>
-                          <span style={{ fontSize:13, flex:1 }}>{ev.nom} — {fmtDate(ev.date)}</span>
-                          <button onClick={()=>valider(insc.id)} style={{ background:'#EAF3DE', color:'#3B6D11', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, cursor:'pointer' }}>✓</button>
-                          <button onClick={()=>refuser(insc.id)} style={{ background:'#FCEBEB', color:'#A32D2D', border:'none', borderRadius:7, padding:'5px 12px', fontSize:12, cursor:'pointer' }}>✕</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                <div style={{ fontSize:11, fontWeight:600, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>Planning du mois</div>
-                {evsSal.length === 0 ? (
-                  <div style={{ fontSize:13, color:'var(--text-3)', fontStyle:'italic' }}>Aucune mission ce mois.</div>
-                ) : (
-                  evsSal.map(ev => {
-                    const mt = missionTypes[ev.type]||{};
+                <div style={{ fontSize:11, fontWeight:700, color:'#3B6D11', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:8 }}>✅ Planning du mois</div>
+                {salMois.length===0?<div style={{ fontSize:13, color:'var(--text-3)', fontStyle:'italic' }}>Aucune mission validée ce mois.</div>:(
+                  salMois.map(ev=>{
+                    const mt=missionTypes[ev.type]||{icon:'📌',label:ev.type,bg:'#f1efe8',color:'#5f5e5a'};
                     return (
                       <div key={ev.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 0', borderBottom:'1px solid var(--border)' }}>
-                        <span style={{ background:mt.bg, color:mt.color, fontSize:11, padding:'2px 8px', borderRadius:20 }}>{mt.icon} {mt.label}</span>
+                        <span style={{ background:mt.bg, color:mt.color, fontSize:10, padding:'2px 7px', borderRadius:10 }}>{mt.icon} {mt.label}</span>
                         <span style={{ fontSize:13, flex:1 }}>{ev.nom} — {fmtDate(ev.date)} · {ev.debut}–{ev.fin}</span>
                         <span style={{ fontSize:12, fontFamily:'var(--font-mono)', color:'var(--text-2)' }}>{fmtH(dureeH(ev.debut,ev.fin))}</span>
                       </div>
@@ -421,68 +570,10 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                 )}
               </div>
             );
-          })()}
-        </div>
-      )}
-
-      {/* ═══════ ONGLET TABLEAU CROISÉ (gardé pour petites équipes) ═══════ */}
-      {subTab === 'tableau' && (
-        <div>
-          {salaries.length > 15 && (
-            <div style={{ background:'#faeeda', border:'1px solid #f0d5a0', borderRadius:10, padding:'12px 16px', marginBottom:14, fontSize:13, color:'#854F0B' }}>
-              ⚠️ Cette vue tableau devient difficile à lire au-delà de 15 salariés. Utilisez plutôt les onglets "Par événement" ou "Par salarié" pour une équipe nombreuse.
-            </div>
-          )}
-          {evMois.length === 0 ? (
-            <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:'48px', textAlign:'center', color:'var(--text-3)' }}>Aucun événement ce mois.</div>
-          ) : (
-            <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'auto' }}>
-              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:500+salaries.length*100 }}>
-                <thead>
-                  <tr style={{ background:'#fafaf8', borderBottom:'1px solid var(--border)' }}>
-                    <th style={{ ...s.th, textAlign:'left', paddingLeft:16, width:220, minWidth:220, position:'sticky', left:0, zIndex:3, background:'#fafaf8' }}>Événement</th>
-                    {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).map(sal => {
-                      const h = heuresSalarie(sal.id);
-                      const c = AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
-                      return (
-                        <th key={sal.id} style={{ ...s.th, width:100, minWidth:100 }}>
-                          <div style={{ width:26, height:26, borderRadius:'50%', background:c.bg, color:c.txt, display:'flex', alignItems:'center', justifyContent:'center', fontSize:10, fontWeight:500, margin:'0 auto 3px' }}>{initiales(sal.prenom,sal.nom)}</div>
-                          <div style={{ fontSize:10, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.nom}</div>
-                          <div style={{ fontSize:9, color:'var(--text-2)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{sal.prenom}</div>
-                          <div style={{ fontSize:11, fontWeight:500, fontFamily:'var(--font-mono)' }}>{fmtH(h)}</div>
-                        </th>
-                      );
-                    })}
-                  </tr>
-                </thead>
-                <tbody>
-                  {evMois.map(ev => {
-                    const mt = missionTypes[ev.type]||{};
-                    return (
-                      <tr key={ev.id} style={{ borderBottom:'1px solid var(--border)' }}>
-                        <td style={{ padding:'10px 16px', position:'sticky', left:0, zIndex:1, background:'#fff', borderRight:'1px solid var(--border)' }}>
-                          <div style={{ fontWeight:500 }}>{ev.nom}</div>
-                          {ev.ref && <div style={{ fontSize:10, color:'var(--text-3)', fontFamily:'var(--font-mono)', marginTop:1 }}>{ev.ref}</div>}
-                        </td>
-                        {[...salaries].sort((a,b) => a.nom.localeCompare(b.nom) || a.prenom.localeCompare(b.prenom)).map(sal => {
-                          const insc = inscriptions.find(i=>i.evenementId===ev.id&&i.salarieId===sal.id&&i.statut!=='retire');
-                          return (
-                            <td key={sal.id} style={{ padding:'8px', textAlign:'center' }}>
-                              {!insc ? <button onClick={()=>inscrire(ev.id,sal.id)} style={{ width:24, height:24, borderRadius:'50%', background:'#f8f6f2', border:'1px dashed #ccc', cursor:'pointer', fontSize:13, color:'#aaa' }}>+</button>
-                                : insc.statut==='valide' ? <button onClick={()=>handleRetirer(insc.id)} style={{ width:26, height:26, borderRadius:'50%', background:'#EAF3DE', color:'#3B6D11', border:'none', cursor:'pointer', fontSize:13 }}>✓</button>
-                                : <div style={{ display:'flex', gap:3, justifyContent:'center' }}>
-                                    <button onClick={()=>valider(insc.id)} style={{ width:22, height:22, borderRadius:'50%', background:'#EAF3DE', color:'#3B6D11', border:'none', cursor:'pointer', fontSize:11 }}>✓</button>
-                                    <button onClick={()=>refuser(insc.id)} style={{ width:22, height:22, borderRadius:'50%', background:'#FCEBEB', color:'#A32D2D', border:'none', cursor:'pointer', fontSize:11 }}>✕</button>
-                                  </div>
-                              }
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+          })():(
+            <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', padding:'60px 20px', textAlign:'center', color:'var(--text-3)' }}>
+              <div style={{ fontSize:36, marginBottom:12 }}>👈</div>
+              <div>Sélectionnez un salarié</div>
             </div>
           )}
         </div>
@@ -501,7 +592,5 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
 }
 
 const styles = {
-  toolbar: { display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 },
   navBtn: { width:30, height:30, borderRadius:8, border:'1px solid var(--border-med)', background:'#fff', cursor:'pointer', fontSize:16, color:'var(--text-2)', fontFamily:'var(--font)', display:'flex', alignItems:'center', justifyContent:'center' },
-  th: { padding:'10px 8px', fontSize:11, fontWeight:500, color:'var(--text-2)', textAlign:'center', position:'sticky', top:0, zIndex:2, background:'#fafaf8' },
 };
