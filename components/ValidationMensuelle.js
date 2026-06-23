@@ -75,6 +75,18 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   // Inscriptions actives (hors retirées)
   const inscActives = useMemo(() => inscriptions.filter(i=>i.statut!=='retire'), [inscriptions]);
 
+  // Nb demandes EN ATTENTE par salarié sur le mois
+  const attentesPar = useMemo(() => {
+    const map = {};
+    salaries.forEach(s => { map[s.id] = 0; });
+    evMois.forEach(ev => {
+      inscriptions.filter(i=>i.evenementId===ev.id&&i.statut==='en_attente').forEach(i => {
+        if (map[i.salarieId] !== undefined) map[i.salarieId]++;
+      });
+    });
+    return map;
+  }, [inscriptions, evMois, salaries]);
+
   // Nb missions validées par salarié sur le mois
   const missionsPar = useMemo(() => {
     const map = {};
@@ -124,7 +136,13 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   const salDispo = useMemo(() => selectedEvId
     ? [...salaries]
         .filter(s => !inscriptions.find(i=>i.evenementId===selectedEvId&&i.salarieId===s.id&&i.statut!=='retire'))
-        .sort((a,b) => (missionsPar[a.id]||0)-(missionsPar[b.id]||0))
+        .sort((a,b) => {
+          // 1. Plus de demandes en attente = plus volontaire → en haut
+          const diffAttente = (attentesPar[b.id]||0) - (attentesPar[a.id]||0);
+          if (diffAttente !== 0) return diffAttente;
+          // 2. À égalité : moins de missions = plus disponible → en haut
+          return (missionsPar[a.id]||0) - (missionsPar[b.id]||0);
+        })
     : [], [selectedEvId, salaries, inscriptions, missionsPar]);
 
   async function valider(inscId) {
@@ -407,8 +425,11 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
 
                   {/* ── AJOUTER UN SALARIÉ ── */}
                   <div>
-                    <div style={{ fontSize:12, fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:10 }}>
-                      ➕ Ajouter un salarié — triés par disponibilité
+                    <div style={{ fontSize:12, fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>
+                      ➕ Ajouter un salarié
+                    </div>
+                    <div style={{ fontSize:11, color:'var(--text-2)', marginBottom:10 }}>
+                      Triés par volontariat (⏳ demandes en attente) puis disponibilité (✓ missions validées)
                     </div>
                     <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(160px, 1fr))', gap:6, maxHeight:240, overflowY:'auto' }}>
                       {salDispo.map(sal=>{
@@ -428,7 +449,10 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                                 {diplomes.slice(0,2).map(d=><span key={d.label} style={{ fontSize:8, background:d.bg, color:d.color, padding:'0 4px', borderRadius:6 }}>{d.label}</span>)}
                               </div>
                             </div>
-                            <div style={{ background:ch.bg, color:ch.txt, borderRadius:6, padding:'2px 6px', fontSize:11, fontWeight:700, flexShrink:0 }}>{nb}</div>
+                            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, flexShrink:0 }}>
+                              <div style={{ background:ch.bg, color:ch.txt, borderRadius:6, padding:'1px 6px', fontSize:11, fontWeight:700 }}>{nb} ✓</div>
+                              {(attentesPar[sal.id]||0)>0 && <div style={{ background:'#FAEEDA', color:'#854F0B', borderRadius:6, padding:'1px 6px', fontSize:10, fontWeight:700 }}>{attentesPar[sal.id]} ⏳</div>}
+                            </div>
                           </button>
                         );
                       })}
