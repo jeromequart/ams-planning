@@ -22,7 +22,7 @@ function getDiplomes(sal) {
 function dureeH(d,f) { const[dh,dm]=d.split(':').map(Number);const[fh,fm]=f.split(':').map(Number);return(fh*60+fm-(dh*60+dm))/60; }
 function fmtH(h) { if(h<=0)return'0h';const hh=Math.floor(h);const mm=Math.round((h-hh)*60);return mm?`${hh}h${String(mm).padStart(2,'0')}`:`${hh}h`; }
 function ini(p,n) { return((p?.[0]||'')+(n?.[0]||'')).toUpperCase(); }
-function fmtDate(ds) { const d=new Date(ds+'T12:00:00');return`${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()].slice(0,3)}.`; }
+function fmtDate(ds) { const d=new Date(ds+'T12:00:00'); const mois=['Jan','Fév','Mars','Avr','Mai','Juin','Juil','Août','Sep','Oct','Nov','Déc']; return`${DAYS_SHORT[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}`; }
 function localDateStr(d) { return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 
 const AVATAR_COLORS=[
