@@ -42,7 +42,7 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
   const [newVehCustom, setNewVehCustom] = useState('');
   const [showCustom, setShowCustom] = useState(false);
 
-  const s = styles;
+  const st = styles;
 
   function save() {
     if (!form.date || !form.debut || !form.fin) return;
@@ -72,47 +72,47 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
   }
 
   const types = missionTypes || {};
-  const inscritsSalaries = salaries.filter(s => inscrits.find(i => i.salarieId === s.id && i.statut === 'valide'));
+  const inscritsSalaries = salaries.filter(sal => inscrits.find(i => i.salarieId === s.id && i.statut === 'valide'));
 
   return (
     <Modal title={editEvent ? "Modifier l'événement" : "Nouvel événement"} onClose={onClose} width={560}>
       {/* Nom + Ref */}
-      <div style={s.grid2}>
-        <div style={s.fg}><label style={s.label}>Nom de l'événement</label><input style={s.input} value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} placeholder="Ex : Bal des mamans" autoFocus/></div>
-        <div style={s.fg}><label style={s.label}>Référence</label><input style={s.input} value={form.ref} onChange={e=>setForm(p=>({...p,ref:e.target.value}))} placeholder="Ex : DPS 218"/></div>
+      <div style={st.grid2}>
+        <div style={st.fg}><label style={st.label}>Nom de l'événement</label><input style={st.input} value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} placeholder="Ex : Bal des mamans" autoFocus/></div>
+        <div style={st.fg}><label style={st.label}>Référence</label><input style={st.input} value={form.ref} onChange={e=>setForm(p=>({...p,ref:e.target.value}))} placeholder="Ex : DPS 218"/></div>
       </div>
 
       {/* Date + Horaires */}
-      <div style={s.grid3}>
-        <div style={s.fg}><label style={s.label}>Date *</label><input style={s.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
-        <div style={s.fg}><label style={s.label}>Début *</label><input style={s.input} type="time" value={form.debut} onChange={e=>setForm(p=>({...p,debut:e.target.value}))}/></div>
-        <div style={s.fg}><label style={s.label}>Fin *</label><input style={s.input} type="time" value={form.fin} onChange={e=>setForm(p=>({...p,fin:e.target.value}))}/></div>
+      <div style={st.grid3}>
+        <div style={st.fg}><label style={st.label}>Date *</label><input style={st.input} type="date" value={form.date} onChange={e=>setForm(p=>({...p,date:e.target.value}))}/></div>
+        <div style={st.fg}><label style={st.label}>Début *</label><input style={st.input} type="time" value={form.debut} onChange={e=>setForm(p=>({...p,debut:e.target.value}))}/></div>
+        <div style={st.fg}><label style={st.label}>Fin *</label><input style={st.input} type="time" value={form.fin} onChange={e=>setForm(p=>({...p,fin:e.target.value}))}/></div>
       </div>
       {form.debut && form.fin && <div style={{ fontSize:11, color:'var(--text-2)', marginTop:-8, marginBottom:10 }}>Durée : {fmtH(dureeH(form.debut, form.fin))}</div>}
 
       {/* Type + Lieu */}
-      <div style={s.grid2}>
-        <div style={s.fg}>
-          <label style={s.label}>Type de mission</label>
-          <select style={s.input} value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
+      <div style={st.grid2}>
+        <div style={st.fg}>
+          <label style={st.label}>Type de mission</label>
+          <select style={st.input} value={form.type} onChange={e=>setForm(p=>({...p,type:e.target.value}))}>
             {Object.entries(types).map(([k,v]) => <option key={k} value={k}>{v.icon} {v.label}</option>)}
           </select>
         </div>
-        <div style={s.fg}>
-          <label style={s.label}>Lieu</label>
-          <select style={s.input} value={form.lieu} onChange={e=>setForm(p=>({...p,lieu:e.target.value}))}>
+        <div style={st.fg}>
+          <label style={st.label}>Lieu</label>
+          <select style={st.input} value={form.lieu} onChange={e=>setForm(p=>({...p,lieu:e.target.value}))}>
             <option value="">— Sélectionner —</option>
             {LIEUX_FREQUENTS.map(l=><option key={l} value={l}>{l}</option>)}
             <option value="__custom__">Autre lieu…</option>
           </select>
-          {form.lieu==='__custom__' && <input style={{...s.input,marginTop:6}} value={form.lieuCustom} onChange={e=>setForm(p=>({...p,lieuCustom:e.target.value}))} placeholder="Saisir le lieu"/>}
+          {form.lieu==='__custom__' && <input style={{...st.input,marginTop:6}} value={form.lieuCustom} onChange={e=>setForm(p=>({...p,lieuCustom:e.target.value}))} placeholder="Saisir le lieu"/>}
         </div>
       </div>
 
       {/* Effectif + Ouvert */}
-      <div style={s.grid2}>
-        <div style={s.fg}><label style={s.label}>Effectif souhaité</label><input style={s.input} type="number" min="1" max="50" value={form.effectif} onChange={e=>setForm(p=>({...p,effectif:e.target.value}))}/></div>
-        <div style={{...s.fg, display:'flex', flexDirection:'column', justifyContent:'flex-end'}}>
+      <div style={st.grid2}>
+        <div style={st.fg}><label style={st.label}>Effectif souhaité</label><input style={st.input} type="number" min="1" max="50" value={form.effectif} onChange={e=>setForm(p=>({...p,effectif:e.target.value}))}/></div>
+        <div style={{...st.fg, display:'flex', flexDirection:'column', justifyContent:'flex-end'}}>
           <label style={{display:'flex',alignItems:'center',gap:8,cursor:'pointer',fontSize:13}}>
             <input type="checkbox" checked={form.ouvert} onChange={e=>setForm(p=>({...p,ouvert:e.target.checked}))} style={{width:16,height:16}}/>
             <span>Ouvert aux inscriptions salariés</span>
@@ -126,9 +126,9 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
       </div>
 
       {/* Tenue + Repas */}
-      <div style={s.grid2}>
-        <div style={s.fg}>
-          <label style={s.label}>Couleur de tenue</label>
+      <div style={st.grid2}>
+        <div style={st.fg}>
+          <label style={st.label}>Couleur de tenue</label>
           <div style={{ display:'flex', gap:8, marginTop:4 }}>
             {[{val:'blanche',label:'Blanche',bg:'#f8f8f8',border:'#ccc',txt:'#333'},
               {val:'bleue',label:'Bleue',bg:'#e6f1fb',border:'#185FA5',txt:'#185FA5'}].map(t=>(
@@ -140,8 +140,8 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
             ))}
           </div>
         </div>
-        <div style={s.fg}>
-          <label style={s.label}>Repas</label>
+        <div style={st.fg}>
+          <label style={st.label}>Repas</label>
           <div style={{ display:'flex', gap:8, marginTop:4 }}>
             {[{val:true,label:'Pris en charge',bg:'#EAF3DE',border:'#3B6D11',txt:'#3B6D11'},
               {val:false,label:'Non pris en charge',bg:'#f8f6f2',border:'#ccc',txt:'#888'}].map(r=>(
@@ -155,12 +155,12 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
       </div>
 
       {/* Heure départ */}
-      <div style={s.grid2}>
-        <div style={s.fg}>
-          <label style={s.label}>Heure de départ du bureau</label>
-          <input style={s.input} type="time" value={form.heureDepart} onChange={e=>setForm(p=>({...p,heureDepart:e.target.value}))} placeholder="Optionnel"/>
+      <div style={st.grid2}>
+        <div style={st.fg}>
+          <label style={st.label}>Heure de départ du bureau</label>
+          <input style={st.input} type="time" value={form.heureDepart} onChange={e=>setForm(p=>({...p,heureDepart:e.target.value}))} placeholder="Optionnel"/>
         </div>
-        <div style={{...s.fg, display:'flex', flexDirection:'column', justifyContent:'flex-end'}}>
+        <div style={{...st.fg, display:'flex', flexDirection:'column', justifyContent:'flex-end'}}>
           <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer', fontSize:13, padding:'9px 12px', borderRadius:8, border:'1px solid var(--border-med)', background:form.arriveeSurPlace?'#faeeda':'transparent' }}>
             <input type="checkbox" checked={form.arriveeSurPlace} onChange={e=>setForm(p=>({...p,arriveeSurPlace:e.target.checked}))} style={{ width:15, height:15, accentColor:'#854F0B' }}/>
             <span style={{ color:form.arriveeSurPlace?'#854F0B':'var(--text-2)', fontWeight:form.arriveeSurPlace?500:400 }}>⚠️ Arrivée sur place (prévenir le chef)</span>
@@ -188,7 +188,7 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
                   onChange={e => setConducteur(v.id, e.target.value)}
                 >
                   <option value="">Conducteur…</option>
-                  {inscritsSalaries.map(s => <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
+                  {inscritsSalaries.map(sal => <option key={sal.id} value={sal.id}>{sal.prenom} {sal.nom}</option>)}
                 </select>
                 <button onClick={() => removeVeh(v.id)} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', fontSize:16 }}>✕</button>
               </div>
@@ -201,7 +201,7 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
       <div style={{ display:'flex', gap:8, alignItems:'center', marginBottom:4 }}>
         {!showCustom ? (
           <>
-            <select style={{ ...s.input, flex:1 }} value={newVehId} onChange={e=>setNewVehId(e.target.value)}>
+            <select style={{ ...st.input, flex:1 }} value={newVehId} onChange={e=>setNewVehId(e.target.value)}>
               <option value="">— Sélectionner un véhicule —</option>
               {vehicules.filter(v => !vehs.find(av => av.vehiculeId === v.id)).map(v => (
                 <option key={v.id} value={v.id}>{v.nom} — {v.immatriculation}</option>
@@ -209,26 +209,26 @@ export default function EventModal({ onClose, onSave, missionTypes, initialDate 
               <option value="__custom__">+ Autre véhicule…</option>
             </select>
             <button onClick={() => { if (newVehId === '__custom__') { setShowCustom(true); setNewVehId(''); } else addVeh(); }}
-              style={s.btnPri}>Ajouter</button>
+              style={st.btnPri}>Ajouter</button>
           </>
         ) : (
           <>
-            <input style={{ ...s.input, flex:1 }} value={newVehCustom} onChange={e=>setNewVehCustom(e.target.value)} placeholder="Immatriculation ou nom du véhicule" autoFocus/>
-            <button onClick={addVeh} style={s.btnPri}>Ajouter</button>
-            <button onClick={() => setShowCustom(false)} style={s.btnSec}>Annuler</button>
+            <input style={{ ...st.input, flex:1 }} value={newVehCustom} onChange={e=>setNewVehCustom(e.target.value)} placeholder="Immatriculation ou nom du véhicule" autoFocus/>
+            <button onClick={addVeh} style={st.btnPri}>Ajouter</button>
+            <button onClick={() => setShowCustom(false)} style={st.btnSec}>Annuler</button>
           </>
         )}
       </div>
 
       {/* Note */}
-      <div style={{ ...s.fg, marginTop:12 }}>
-        <label style={s.label}>Note / Instructions</label>
-        <textarea style={{ ...s.input, minHeight:56, resize:'vertical' }} value={form.note} onChange={e=>setForm(p=>({...p,note:e.target.value}))} placeholder="Instructions particulières…"/>
+      <div style={{ ...st.fg, marginTop:12 }}>
+        <label style={st.label}>Note / Instructions</label>
+        <textarea style={{ ...st.input, minHeight:56, resize:'vertical' }} value={form.note} onChange={e=>setForm(p=>({...p,note:e.target.value}))} placeholder="Instructions particulières…"/>
       </div>
 
       <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
-        <button style={s.btnSec} onClick={onClose}>Annuler</button>
-        <button style={s.btnPri} onClick={save}>{editEvent ? 'Enregistrer' : "Créer l'événement"}</button>
+        <button style={st.btnSec} onClick={onClose}>Annuler</button>
+        <button style={st.btnPri} onClick={save}>{editEvent ? 'Enregistrer' : "Créer l'événement"}</button>
       </div>
     </Modal>
   );
