@@ -40,7 +40,15 @@ function chargeColor(n) {
 export default function ValidationMensuelle({ salaries, evenements, inscriptions, addInscription, updateInscription, removeInscription, retireInscription, reactiverInscription, missionTypes }) {
   const [current, setCurrent] = useState(() => { const d=new Date(); d.setDate(1); return d; });
   const listRef = useRef(null);
+  const detailRef = useRef(null);
   const [selectedEvId, setSelectedEvId] = useState(null);
+
+  function selectEv(id) {
+    setSelectedEvId(id);
+    setTimeout(() => {
+      detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
   const [saving, setSaving] = useState({});
   const [historique, setHistorique] = useState(null);
   const [searchEv, setSearchEv] = useState('');
@@ -271,7 +279,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                 const isSel=selectedEvId===ev.id;
                 const isPast=ev.date<now;
                 return (
-                  <div key={ev.id} id={'ev-'+ev.id} onClick={()=>setSelectedEvId(ev.id)}
+                  <div key={ev.id} id={'ev-'+ev.id} onClick={()=>selectEv(ev.id)}
                     style={{ background:isSel?'#fff5f5':'#fff', borderRadius:10,
                       border:`1.5px solid ${isSel?'#a32d2d':'var(--border)'}`,
                       padding:'10px 12px', cursor:'pointer', opacity:isPast?0.65:1,
@@ -305,7 +313,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
           ) : (()=>{
             const mt=missionTypes[selectedEv.type]||Object.values(missionTypes)[0]||{label:selectedEv.type,icon:'📌',bg:'#f1efe8',color:'#5f5e5a'};
             return (
-              <div style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden' }}>
+              <div ref={detailRef} style={{ background:'#fff', borderRadius:14, border:'1px solid var(--border)', overflow:'hidden', scrollMarginTop:80 }}>
                 {/* Header événement */}
                 <div style={{ background:mt.color, padding:'14px 18px', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                   <div>
