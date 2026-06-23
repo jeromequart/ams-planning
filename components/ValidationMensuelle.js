@@ -48,21 +48,6 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   const [searchSal, setSearchSal] = useState('');
   const [selectedSalId, setSelectedSalId] = useState(null);
 
-  // Sélectionner automatiquement le prochain événement à venir
-  useEffect(() => {
-    if (evMois.length === 0) return;
-    const now2 = localDateStr(new Date());
-    const prochain = evMois.find(e => e.date >= now2) || evMois[evMois.length - 1];
-    if (prochain && !selectedEvId) {
-      setSelectedEvId(prochain.id);
-      // Scroller jusqu'à cet événement dans la liste
-      setTimeout(() => {
-        const el = document.getElementById('ev-' + prochain.id);
-        if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
-      }, 150);
-    }
-  }, [evMois]);
-
   const year = current.getFullYear();
   const month = current.getMonth();
   const now = localDateStr(new Date());
@@ -197,6 +182,20 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
     { key:'attente',  label:'⏳ Toutes les attentes', badge: totalAttente },
     { key:'salarie',  label:'👤 Par salarié', badge: 0 },
   ];
+
+  // Sélectionner automatiquement le prochain événement à venir (après toutes les déclarations)
+  useEffect(() => {
+    if (evMois.length === 0) return;
+    const now2 = localDateStr(new Date());
+    const prochain = evMois.find(e => e.date >= now2) || evMois[evMois.length - 1];
+    if (prochain && !selectedEvId) {
+      setSelectedEvId(prochain.id);
+      setTimeout(() => {
+        const el = document.getElementById('ev-' + prochain.id);
+        if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }, 150);
+    }
+  }, [evMois]);
 
   return (
     <div>
