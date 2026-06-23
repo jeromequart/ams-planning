@@ -87,7 +87,7 @@ export default function EmployeeView({ salaries, evenements, inscriptions, addIn
   }
 
   const c = AVATAR_COLORS[salarie.colorIdx % AVATAR_COLORS.length];
-  const s = styles;
+  const st = styles;
 
   return (
     <div>
@@ -96,14 +96,14 @@ export default function EmployeeView({ salaries, evenements, inscriptions, addIn
         <span style={{ fontSize:13, color:'var(--text-2)', flexShrink:0 }}>Je suis :</span>
         <select style={{ flex:1, maxWidth:280, padding:'9px 12px', border:'1px solid var(--border-med)', borderRadius:9, fontSize:13, background:'#fff', fontFamily:'var(--font)' }}
           value={sel||''} onChange={e => setSel(e.target.value)}>
-          {salaries.map(s => <option key={s.id} value={s.id}>{s.prenom} {s.nom}</option>)}
+          {salaries.map(sal => <option key={sal.id} value={sal.id}>{sal.prenom} {sal.nom}</option>)}
         </select>
       </div>
 
       {/* Header */}
       <div style={s.card}>
         <div style={{ display:'flex', alignItems:'center', gap:14 }}>
-          <div style={{ ...s.avatar, background:c.bg, color:c.txt }}>{initiales(salarie.prenom, salarie.nom)}</div>
+          <div style={{ ...st.avatar, background:c.bg, color:c.txt }}>{initiales(salarie.prenom, salarie.nom)}</div>
           <div style={{ flex:1 }}>
             <div style={{ fontSize:18, fontWeight:600 }}>{salarie.prenom} {salarie.nom}</div>
             <div style={{ fontSize:13, color:'var(--text-2)', marginTop:2 }}>{salarie.role || 'Salarié saisonnier'}</div>
