@@ -251,8 +251,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           </>
         )}
       </div>
-
-      {/* Modal salarié */}
+      </div>
       {showModal&&(
         <Modal title={editId?'Modifier le salarié':'Nouveau salarié'} onClose={()=>setShowModal(false)} width={520}>
           {/* Prénom / Nom */}
