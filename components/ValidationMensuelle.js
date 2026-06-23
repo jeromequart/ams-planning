@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import HistoriqueModal from './HistoriqueModal';
 
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
@@ -39,6 +39,7 @@ function chargeColor(n) {
 
 export default function ValidationMensuelle({ salaries, evenements, inscriptions, addInscription, updateInscription, removeInscription, retireInscription, reactiverInscription, missionTypes }) {
   const [current, setCurrent] = useState(() => { const d=new Date(); d.setDate(1); return d; });
+  const listRef = useRef(null);
   const [selectedEvId, setSelectedEvId] = useState(null);
   const [saving, setSaving] = useState({});
   const [historique, setHistorique] = useState(null);
@@ -46,6 +47,21 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   const [subTab, setSubTab] = useState('planning'); // 'planning' | 'attente' | 'salarie'
   const [searchSal, setSearchSal] = useState('');
   const [selectedSalId, setSelectedSalId] = useState(null);
+
+  // Sélectionner automatiquement le prochain événement à venir
+  useEffect(() => {
+    if (evMois.length === 0) return;
+    const now2 = localDateStr(new Date());
+    const prochain = evMois.find(e => e.date >= now2) || evMois[evMois.length - 1];
+    if (prochain && !selectedEvId) {
+      setSelectedEvId(prochain.id);
+      // Scroller jusqu'à cet événement dans la liste
+      setTimeout(() => {
+        const el = document.getElementById('ev-' + prochain.id);
+        if (el) el.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      }, 150);
+    }
+  }, [evMois]);
 
   const year = current.getFullYear();
   const month = current.getMonth();
@@ -170,8 +186,8 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
       {/* Toolbar mois */}
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-          <button style={s.navBtn} onClick={()=>setCurrent(new Date(year,month-1,1))}>‹</button>
-          <button style={s.navBtn} onClick={()=>setCurrent(new Date(year,month+1,1))}>›</button>
+          <button style={s.navBtn} onClick={()=>{ setCurrent(new Date(year,month-1,1)); setSelectedEvId(null); }}>‹</button>
+          <button style={s.navBtn} onClick={()=>{ setCurrent(new Date(year,month+1,1)); setSelectedEvId(null); }}>›</button>
           <span style={{ fontSize:16, fontWeight:600 }}>{MONTHS[month]} {year}</span>
         </div>
         <div style={{ display:'flex', gap:8, alignItems:'center' }}>
@@ -239,7 +255,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
                 const isSel=selectedEvId===ev.id;
                 const isPast=ev.date<now;
                 return (
-                  <div key={ev.id} onClick={()=>setSelectedEvId(ev.id)}
+                  <div key={ev.id} id={'ev-'+ev.id} onClick={()=>setSelectedEvId(ev.id)}
                     style={{ background:isSel?'#fff5f5':'#fff', borderRadius:10,
                       border:`1.5px solid ${isSel?'#a32d2d':'var(--border)'}`,
                       padding:'10px 12px', cursor:'pointer', opacity:isPast?0.65:1,
