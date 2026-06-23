@@ -78,7 +78,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   // Nb demandes EN ATTENTE par salarié sur le mois
   const attentesPar = useMemo(() => {
     const map = {};
-    salaries.forEach(s => { map[s.id] = 0; });
+    salaries.forEach(sal => { map[sal.id] = 0; });
     evMois.forEach(ev => {
       inscriptions.filter(i=>i.evenementId===ev.id&&i.statut==='en_attente').forEach(i => {
         if (map[i.salarieId] !== undefined) map[i.salarieId]++;
@@ -90,7 +90,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   // Nb missions validées par salarié sur le mois
   const missionsPar = useMemo(() => {
     const map = {};
-    salaries.forEach(s => { map[s.id] = 0; });
+    salaries.forEach(sal => { map[sal.id] = 0; });
     evMois.forEach(ev => {
       inscActives.filter(i=>i.evenementId===ev.id&&i.statut==='valide').forEach(i => {
         if (map[i.salarieId] !== undefined) map[i.salarieId]++;
@@ -135,7 +135,7 @@ export default function ValidationMensuelle({ salaries, evenements, inscriptions
   // Salariés non inscrits, triés par nb missions croissant (les moins chargés en premier)
   const salDispo = useMemo(() => selectedEvId
     ? [...salaries]
-        .filter(s => !inscriptions.find(i=>i.evenementId===selectedEvId&&i.salarieId===s.id&&i.statut!=='retire'))
+        .filter(sal => !inscriptions.find(i=>i.evenementId===selectedEvId&&i.salarieId===sal.id&&i.statut!=='retire'))
         .sort((a,b) => {
           // 1. Plus de demandes en attente = plus volontaire → en haut
           const diffAttente = (attentesPar[b.id]||0) - (attentesPar[a.id]||0);
