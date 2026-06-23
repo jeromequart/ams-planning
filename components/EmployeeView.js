@@ -39,7 +39,7 @@ const SEUIL_MOIS = 151.67; // temps plein mensuel
 export default function EmployeeView({ salaries, evenements, inscriptions, addInscription, removeInscription, missionTypes }) {
   const [sel, setSel] = useState(salaries[0]?.id || null);
   const [viewMode, setViewMode] = useState('semaine'); // 'semaine' | 'mois' | 'planning'
-  const salarie = salaries.find(s => s.id === sel) || salaries[0];
+  const salarie = salaries.find(sal => sal.id === sel) || salaries[0];
   const now = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
 
   if (!salarie) return (
