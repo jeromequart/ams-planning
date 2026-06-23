@@ -81,11 +81,11 @@ export default function AdminApp({ onLogout }) {
     const ev = evenements.find(e => e.id === evenementId);
     if (!ev) return;
     const inscritsValides = inscriptions.filter(i => i.evenementId === evenementId && i.statut === 'valide');
-    const sals = salaries.filter(s => inscritsValides.find(i => i.salarieId === s.id));
+    const sals = salaries.filter(sal => inscritsValides.find(i => i.salarieId === sal.id));
     const vehs = evenementVehicules[evenementId] || await loadEvenementVehicules(evenementId);
     const vehsAvecLabel = vehs.map(v => {
       const veh = vehicules.find(x => x.id === v.vehiculeId);
-      const conducteur = salaries.find(s => s.id === v.conducteurId);
+      const conducteur = salaries.find(sal => sal.id === v.conducteurId);
       return {
         label: veh ? `${veh.nom} — ${veh.immatriculation}` : v.vehiculeCustom || '?',
         conducteurNom: conducteur ? `${conducteur.prenom} ${conducteur.nom}` : null,
