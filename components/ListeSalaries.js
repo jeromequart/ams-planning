@@ -31,7 +31,7 @@ export default function ListeSalaries({ salaries, onClose }) {
   const [search, setSearch] = useState('');
 
   const filtered = salaries.filter(s =>
-    `${s.prenom} ${s.nom} ${s.email} ${s.tel}`.toLowerCase().includes(search.toLowerCase())
+    `${sal.prenom} ${sal.nom} ${sal.email} ${sal.tel}`.toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => a.nom.localeCompare(b.nom));
 
   async function exportPDF() {
