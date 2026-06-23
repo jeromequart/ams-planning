@@ -30,7 +30,7 @@ export default function ListeSalaries({ salaries, onClose }) {
   const [generating, setGenerating] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = salaries.filter(s =>
+  const filtered = salaries.filter(sal =>
     `${sal.prenom} ${sal.nom} ${sal.email} ${sal.tel}`.toLowerCase().includes(search.toLowerCase())
   ).sort((a, b) => a.nom.localeCompare(b.nom));
 
@@ -168,7 +168,7 @@ export default function ListeSalaries({ salaries, onClose }) {
     }
   }
 
-  const s = styles;
+  const st = styles;
 
   return (
     <div style={s.overlay} onClick={onClose}>
