@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Modal from './Modal';
 import { AVATAR_COLORS } from '../data/config';
 
@@ -33,6 +33,15 @@ const FORM_VIDE = { prenom:'', nom:'', role:'', colorIdx:0, dateNaissance:'', em
 
 export default function AdminView({ salaries, addSalarie, updateSalarie, removeSalarie, evenements, inscriptions, updateInscription, removeInscription, missionTypes }) {
   const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState('');
+  const detailRef = useRef(null);
+
+  function selectSalarie(id) {
+    setSelected(id);
+    setTimeout(() => {
+      detailRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
+  }
   const [showModal, setShowModal] = useState(false);
   const [showCompte, setShowCompte] = useState(false);
   const [editId, setEditId] = useState(null);
@@ -95,8 +104,15 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           <span style={st.sectionLabel}>Équipe ({salaries.length})</span>
           <button style={st.btnPri} onClick={openAdd}>+ Ajouter</button>
         </div>
+        {/* Barre de recherche */}
+        <input
+          style={{ width:'100%', padding:'8px 11px', border:'1px solid var(--border-med)', borderRadius:8, fontSize:13, fontFamily:'var(--font)', marginBottom:8, boxSizing:'border-box' }}
+          placeholder="Rechercher un salarié…"
+          value={search}
+          onChange={e=>setSearch(e.target.value)}
+        />
         {salaries.length===0&&<div style={{textAlign:'center',padding:'32px 12px',color:'var(--text-3)',fontSize:13}}><div style={{fontSize:32,marginBottom:8}}>👤</div>Aucun salarié.</div>}
-        {salaries.map(sal=>{
+        {[...salaries].filter(sal=>`${sal.prenom} ${sal.nom}`.toLowerCase().includes(search.toLowerCase())).sort((a,b)=>a.nom.localeCompare(b.nom)||a.prenom.localeCompare(b.prenom)).map(sal=>{
           const c=AVATAR_COLORS[sal.colorIdx%AVATAR_COLORS.length];
           const salInsc=inscriptions.filter(i=>i.salarieId===sal.id&&i.statut==='valide');
           const salEvs=evenements.filter(e=>salInsc.find(i=>i.evenementId===e.id));
@@ -104,7 +120,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           const age=getAge(sal.dateNaissance);
           const diplomes=getDiplomes(sal);
           return(
-            <div key={sal.id} onClick={()=>setSelected(sal.id)} style={{...st.staffCard,...(selected===sal.id?st.staffCardActive:{})}}>
+            <div key={sal.id} onClick={()=>selectSalarie(sal.id)} style={{...st.staffCard,...(selected===sal.id?st.staffCardActive:{})}}>
               <div style={{...st.avatar,background:c.bg,color:c.txt}}>{initiales(sal.prenom,sal.nom)}</div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={st.staffName}>{sal.prenom} {sal.nom}
@@ -125,6 +141,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
 
       {/* Détail */}
       <div style={st.detail}>
+        <div ref={detailRef} style={{ scrollMarginTop: 80 }}>
         {!salarie?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:300,color:'var(--text-3)'}}>
             <div style={{fontSize:40,marginBottom:12}}>👈</div>
