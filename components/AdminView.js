@@ -83,17 +83,17 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
     finally{setCompteSaving(false);}
   }
 
-  const s = styles;
+  const st = styles;
   const age = salarie ? getAge(salarie.dateNaissance) : null;
   const diplomes = salarie ? getDiplomes(salarie) : [];
 
   return (
-    <div style={s.container}>
+    <div style={st.container}>
       {/* Sidebar */}
-      <div style={s.sidebar}>
+      <div style={st.sidebar}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:10}}>
-          <span style={s.sectionLabel}>Équipe ({salaries.length})</span>
-          <button style={s.btnPri} onClick={openAdd}>+ Ajouter</button>
+          <span style={st.sectionLabel}>Équipe ({salaries.length})</span>
+          <button style={st.btnPri} onClick={openAdd}>+ Ajouter</button>
         </div>
         {salaries.length===0&&<div style={{textAlign:'center',padding:'32px 12px',color:'var(--text-3)',fontSize:13}}><div style={{fontSize:32,marginBottom:8}}>👤</div>Aucun salarié.</div>}
         {salaries.map(sal=>{
@@ -104,10 +104,10 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           const age=getAge(sal.dateNaissance);
           const diplomes=getDiplomes(sal);
           return(
-            <div key={sal.id} onClick={()=>setSelected(sal.id)} style={{...s.staffCard,...(selected===sal.id?s.staffCardActive:{})}}>
-              <div style={{...s.avatar,background:c.bg,color:c.txt}}>{initiales(sal.prenom,sal.nom)}</div>
+            <div key={sal.id} onClick={()=>setSelected(sal.id)} style={{...st.staffCard,...(selected===sal.id?st.staffCardActive:{})}}>
+              <div style={{...st.avatar,background:c.bg,color:c.txt}}>{initiales(sal.prenom,sal.nom)}</div>
               <div style={{flex:1,minWidth:0}}>
-                <div style={s.staffName}>{sal.prenom} {sal.nom}
+                <div style={st.staffName}>{sal.prenom} {sal.nom}
                   {age!==null&&age<18&&<span style={{fontSize:9,background:'#FCEBEB',color:'#A32D2D',padding:'1px 5px',borderRadius:10,marginLeft:4,fontWeight:500}}>-18</span>}
                 </div>
                 <div style={{display:'flex',gap:3,flexWrap:'wrap',marginTop:2}}>
@@ -124,7 +124,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
       </div>
 
       {/* Détail */}
-      <div style={s.detail}>
+      <div style={st.detail}>
         {!salarie?(
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',height:300,color:'var(--text-3)'}}>
             <div style={{fontSize:40,marginBottom:12}}>👈</div>
@@ -135,7 +135,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
             {/* Header */}
             <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:20,paddingBottom:16,borderBottom:'1px solid var(--border)'}}>
               <div style={{display:'flex',alignItems:'center',gap:14}}>
-                <div style={{...s.avatarLg,background:AVATAR_COLORS[salarie.colorIdx%AVATAR_COLORS.length].bg,color:AVATAR_COLORS[salarie.colorIdx%AVATAR_COLORS.length].txt}}>
+                <div style={{...st.avatarLg,background:AVATAR_COLORS[salarie.colorIdx%AVATAR_COLORS.length].bg,color:AVATAR_COLORS[salarie.colorIdx%AVATAR_COLORS.length].txt}}>
                   {initiales(salarie.prenom,salarie.nom)}
                 </div>
                 <div>
@@ -153,9 +153,9 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
                 </div>
               </div>
               <div style={{display:'flex',gap:8,flexWrap:'wrap',justifyContent:'flex-end'}}>
-                <button style={s.btnSec} onClick={()=>openEdit(salarie)}>✏️ Modifier</button>
-                <button style={{...s.btnSec,color:'var(--red)'}} onClick={()=>handleDelete(salarie.id)}>🗑 Supprimer</button>
-                <button style={{...s.btnPri,background:'#185fa5'}} onClick={()=>{setCompteForm({email:salarie.email||'',password:''});setCompteMsg('');setShowCompte(true);}}>🔑 Créer un accès</button>
+                <button style={st.btnSec} onClick={()=>openEdit(salarie)}>✏️ Modifier</button>
+                <button style={{...st.btnSec,color:'var(--red)'}} onClick={()=>handleDelete(salarie.id)}>🗑 Supprimer</button>
+                <button style={{...st.btnPri,background:'#185fa5'}} onClick={()=>{setCompteForm({email:salarie.email||'',password:''});setCompteMsg('');setShowCompte(true);}}>🔑 Créer un accès</button>
               </div>
             </div>
 
@@ -188,7 +188,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
             {/* Missions */}
             <div style={{background:'#fff',borderRadius:12,border:'1px solid var(--border)',overflow:'hidden'}}>
               <div style={{padding:'12px 16px',borderBottom:'1px solid var(--border)'}}>
-                <span style={s.sectionLabel}>Missions assignées</span>
+                <span style={st.sectionLabel}>Missions assignées</span>
               </div>
               {mesEvenements.length===0?(
                 <div style={{textAlign:'center',padding:'32px',color:'var(--text-3)',fontSize:13}}>
@@ -240,24 +240,24 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
         <Modal title={editId?'Modifier le salarié':'Nouveau salarié'} onClose={()=>setShowModal(false)} width={520}>
           {/* Prénom / Nom */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginBottom:12}}>
-            <div><label style={s.label}>Prénom *</label><input style={s.input} value={form.prenom} onChange={e=>setForm(p=>({...p,prenom:e.target.value}))} placeholder="Prénom" autoFocus/></div>
-            <div><label style={s.label}>Nom *</label><input style={s.input} value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} placeholder="NOM"/></div>
+            <div><label style={st.label}>Prénom *</label><input style={st.input} value={form.prenom} onChange={e=>setForm(p=>({...p,prenom:e.target.value}))} placeholder="Prénom" autoFocus/></div>
+            <div><label style={st.label}>Nom *</label><input style={st.input} value={form.nom} onChange={e=>setForm(p=>({...p,nom:e.target.value}))} placeholder="NOM"/></div>
           </div>
           {/* Rôle */}
-          <div style={{marginBottom:12}}><label style={s.label}>Rôle / Poste</label><input style={s.input} value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Ex : Secouriste, Chef d'équipe…"/></div>
+          <div style={{marginBottom:12}}><label style={st.label}>Rôle / Poste</label><input style={st.input} value={form.role} onChange={e=>setForm(p=>({...p,role:e.target.value}))} placeholder="Ex : Secouriste, Chef d'équipe…"/></div>
           {/* Date naissance / Email / Tel */}
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:12,marginBottom:12}}>
             <div>
-              <label style={s.label}>Date de naissance</label>
-              <input style={s.input} type="date" value={form.dateNaissance} onChange={e=>setForm(p=>({...p,dateNaissance:e.target.value}))}/>
+              <label style={st.label}>Date de naissance</label>
+              <input style={st.input} type="date" value={form.dateNaissance} onChange={e=>setForm(p=>({...p,dateNaissance:e.target.value}))}/>
               {form.dateNaissance&&(()=>{const age=getAge(form.dateNaissance);return age!==null&&age<18?<div style={{fontSize:11,color:'#A32D2D',marginTop:3}}>⚠️ Mineur ({age} ans)</div>:null;})()}
             </div>
-            <div><label style={s.label}>Email</label><input style={s.input} type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="prenom@email.com"/></div>
-            <div><label style={s.label}>Tél. portable</label><input style={s.input} type="tel" value={form.tel} onChange={e=>setForm(p=>({...p,tel:e.target.value}))} placeholder="06 00 00 00 00"/></div>
+            <div><label style={st.label}>Email</label><input style={st.input} type="email" value={form.email} onChange={e=>setForm(p=>({...p,email:e.target.value}))} placeholder="prenom@email.com"/></div>
+            <div><label style={st.label}>Tél. portable</label><input style={st.input} type="tel" value={form.tel} onChange={e=>setForm(p=>({...p,tel:e.target.value}))} placeholder="06 00 00 00 00"/></div>
           </div>
           {/* Diplômes */}
           <div style={{marginBottom:14}}>
-            <label style={s.label}>Diplômes / Fonctions</label>
+            <label style={st.label}>Diplômes / Fonctions</label>
             <div style={{display:'flex',gap:12,flexWrap:'wrap',marginTop:6}}>
               {[
                 {key:'chefEquipe',label:'Chef d\'équipe',color:'#534AB7',bg:'#EEEDFE'},
@@ -275,7 +275,7 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           </div>
           {/* Couleur avatar */}
           <div style={{marginBottom:14}}>
-            <label style={s.label}>Couleur de l'avatar</label>
+            <label style={st.label}>Couleur de l'avatar</label>
             <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:6}}>
               {AVATAR_COLORS.map((c,i)=>(
                 <div key={i} onClick={()=>setForm(p=>({...p,colorIdx:i}))} style={{width:32,height:32,borderRadius:'50%',background:c.bg,color:c.txt,display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:600,cursor:'pointer',border:form.colorIdx===i?`2px solid ${c.txt}`:'2px solid transparent'}}>
@@ -285,8 +285,8 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
             </div>
           </div>
           <div style={{display:'flex',gap:10,justifyContent:'flex-end',marginTop:20}}>
-            <button style={s.btnSec} onClick={()=>setShowModal(false)}>Annuler</button>
-            <button style={s.btnPri} onClick={save} disabled={saving}>{saving?'…':editId?'Enregistrer':'Créer le salarié'}</button>
+            <button style={st.btnSec} onClick={()=>setShowModal(false)}>Annuler</button>
+            <button style={st.btnPri} onClick={save} disabled={saving}>{saving?'…':editId?'Enregistrer':'Créer le salarié'}</button>
           </div>
         </Modal>
       )}
@@ -297,12 +297,12 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
           <div style={{marginBottom:16,padding:'12px 14px',background:'#e6f1fb',borderRadius:10,fontSize:13,color:'#185fa5'}}>
             Créez les identifiants de connexion pour ce salarié.
           </div>
-          <div style={{marginBottom:12}}><label style={s.label}>Adresse email *</label><input style={s.input} type="email" value={compteForm.email} onChange={e=>setCompteForm(p=>({...p,email:e.target.value}))} placeholder="prenom.nom@email.com" autoFocus/></div>
-          <div style={{marginBottom:12}}><label style={s.label}>Mot de passe *</label><input style={s.input} type="text" value={compteForm.password} onChange={e=>setCompteForm(p=>({...p,password:e.target.value}))} placeholder="Minimum 6 caractères"/></div>
+          <div style={{marginBottom:12}}><label style={st.label}>Adresse email *</label><input style={st.input} type="email" value={compteForm.email} onChange={e=>setCompteForm(p=>({...p,email:e.target.value}))} placeholder="prenom.nom@email.com" autoFocus/></div>
+          <div style={{marginBottom:12}}><label style={st.label}>Mot de passe *</label><input style={st.input} type="text" value={compteForm.password} onChange={e=>setCompteForm(p=>({...p,password:e.target.value}))} placeholder="Minimum 6 caractères"/></div>
           {compteMsg&&<div style={{padding:'10px 14px',borderRadius:8,marginBottom:12,fontSize:13,background:compteMsg.startsWith('✅')?'#eaf3de':'#fcebeb',color:compteMsg.startsWith('✅')?'#3b6d11':'#a32d2d'}}>{compteMsg}</div>}
           <div style={{display:'flex',gap:10,justifyContent:'flex-end',marginTop:16}}>
-            <button style={s.btnSec} onClick={()=>setShowCompte(false)}>Fermer</button>
-            <button style={{...s.btnPri,background:'#185fa5'}} onClick={handleCreerCompte} disabled={compteSaving}>{compteSaving?'Création…':'Créer le compte'}</button>
+            <button style={st.btnSec} onClick={()=>setShowCompte(false)}>Fermer</button>
+            <button style={{...st.btnPri,background:'#185fa5'}} onClick={handleCreerCompte} disabled={compteSaving}>{compteSaving?'Création…':'Créer le compte'}</button>
           </div>
         </Modal>
       )}
