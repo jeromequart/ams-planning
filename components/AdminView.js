@@ -43,14 +43,14 @@ export default function AdminView({ salaries, addSalarie, updateSalarie, removeS
   const [compteSaving, setCompteSaving] = useState(false);
   const now = (() => { const n=new Date(); return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`; })();
 
-  const salarie = salaries.find(s => s.id === selected);
+  const salarie = salaries.find(sal => sal.id === selected);
   const mesInscriptions = inscriptions.filter(i => i.salarieId === selected && i.statut === 'valide');
   const mesEvenements = evenements.filter(e => mesInscriptions.find(i => i.evenementId === e.id)).sort((a,b)=>a.date.localeCompare(b.date));
   const hEffectuees = mesEvenements.filter(e=>e.date<now).reduce((s,e)=>s+dureeH(e.debut,e.fin),0);
   const hAVenir = mesEvenements.filter(e=>e.date>=now).reduce((s,e)=>s+dureeH(e.debut,e.fin),0);
 
   function openAdd(){setForm({...FORM_VIDE,colorIdx:salaries.length%AVATAR_COLORS.length});setEditId(null);setShowModal(true);}
-  function openEdit(s){setForm({prenom:s.prenom,nom:s.nom,role:s.role||'',colorIdx:s.colorIdx||0,dateNaissance:s.dateNaissance||'',email:s.email||'',tel:s.tel||'',chefEquipe:!!s.chefEquipe,pse1:!!s.pse1,pse2:!!s.pse2,bnssa:!!s.bnssa});setEditId(s.id);setShowModal(true);}
+  function openEdit(sal){setForm({prenom:sal.prenom,nom:sal.nom,role:sal.role||'',colorIdx:sal.colorIdx||0,dateNaissance:sal.dateNaissance||'',email:sal.email||'',tel:sal.tel||'',chefEquipe:!!sal.chefEquipe,pse1:!!sal.pse1,pse2:!!sal.pse2,bnssa:!!sal.bnssa});setEditId(sal.id);setShowModal(true);}
 
   async function save(){
     if(!form.prenom.trim()||!form.nom.trim())return;
