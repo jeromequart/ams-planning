@@ -171,19 +171,19 @@ export default function ListeSalaries({ salaries, onClose }) {
   const st = styles;
 
   return (
-    <div style={s.overlay} onClick={onClose}>
-      <div style={s.panel} onClick={e => e.stopPropagation()}>
+    <div style={st.overlay} onClick={onClose}>
+      <div style={st.panel} onClick={e => e.stopPropagation()}>
         {/* Header */}
-        <div style={s.header}>
+        <div style={st.header}>
           <div>
             <div style={{ fontSize:16, fontWeight:600 }}>Liste des salariés</div>
             <div style={{ fontSize:12, color:'var(--text-2)', marginTop:2 }}>{salaries.length} salarié{salaries.length>1?'s':''}</div>
           </div>
           <div style={{ display:'flex', gap:8 }}>
-            <button onClick={exportPDF} disabled={generating} style={s.btnPDF}>
+            <button onClick={exportPDF} disabled={generating} style={st.btnPDF}>
               {generating ? '⏳ Génération…' : '📄 Exporter PDF'}
             </button>
-            <button onClick={onClose} style={s.btnClose}>✕</button>
+            <button onClick={onClose} style={st.btnClose}>✕</button>
           </div>
         </div>
 
